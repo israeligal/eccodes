@@ -27,6 +27,9 @@
 #include <iomanip>
 #include <iostream>
 
+#include "eckit/serialisation/HandleStream.h"
+#include "eckit/io/MemoryHandle.h"
+
 namespace mir {
 namespace input {
 namespace {
@@ -175,6 +178,8 @@ static struct {
     // This will be just called for has()
     {"gridded", "Nx", is("gridType", "polar_stereographic"),},  // Polar stereo
     {"gridded", "Ni", is("gridType", "triangular_grid"),},  // Polar stereo
+    {"gridded", "numberOfGridInReference", is("gridType", "unstructured_grid"),},  // numberOfGridInReference is just dummy
+
     {"gridded", "numberOfPointsAlongAMeridian"},  // Is that always true?
 
     {"spectral", "pentagonalResolutionParameterJ"},
@@ -460,20 +465,88 @@ void GribInput::setAuxilaryFiles(const std::string &pathToLatitudes, const std::
 
 // TODO: some caching, also next() should maybe advance the auxilary files
 void GribInput::latitudes(std::vector<double> &values) const {
-    values.clear(); values.reserve(latitudes_.size());
+    values.clear();
+    values.reserve(latitudes_.size());
     std::copy(latitudes_.begin(), latitudes_.end(), std::back_inserter(values));
 }
 
 void GribInput::longitudes(std::vector<double> &values) const {
-    values.clear(); values.reserve(longitudes_.size());
+    values.clear();
+    values.reserve(longitudes_.size());
     std::copy(longitudes_.begin(), longitudes_.end(), std::back_inserter(values));
 }
 
-bool GribInput::next() {
-    eckit::StrStream os;
-    MIRInput &self = *this;
-    os << "GribInput::next() not implemented for " << self << eckit::StrStream::ends;
-    throw eckit::SeriousBug(std::string(os));
+
+void GribInput::marsRequest(std::ostream& out) const {
+    ASSERT(grib_);
+
+    grib_keys_iterator* keys =  grib_keys_iterator_new(grib_, GRIB_KEYS_ITERATOR_ALL_KEYS, "mars");
+    ASSERT(keys);
+
+    const char* sep = "";
+    try {
+        while(grib_keys_iterator_next(keys)) {
+
+            char value[1024];
+            size_t size = sizeof(value);
+            out << sep << grib_keys_iterator_get_name(keys);
+            GRIB_CALL(grib_keys_iterator_get_string(keys, value, &size));
+            out << "=" << value;
+            sep = ",";
+        }
+        grib_keys_iterator_delete(keys);
+        keys = 0;
+
+        size_t size = 0;
+        int err = grib_get_size(grib_, "freeFormData", &size);
+
+        if(err == 0) {
+            eckit::Buffer buffer(size);
+            char *b = buffer;
+
+            GRIB_CALL(grib_get_bytes(grib_ ,"freeFormData", (unsigned char*)b, &size));
+            ASSERT(size == buffer.size());
+
+            eckit::MemoryHandle h(buffer);
+            eckit::HandleStream in(h);
+            int n;
+            in >> n; // Number of requests
+            ASSERT(n == 1);
+            std::string verb;
+            in >> verb;
+
+            in >> n;
+            for(size_t i = 0; i < n ; i++) {
+                std::string param;
+                in >> param;
+                out << sep << param;
+                const char *slash = "=";
+                int m;
+                in >> m;
+                for(size_t j = 0; j < m; j++) {
+                    std::string value;
+                    in >> value;
+                    out << slash << value;
+                    slash = "/";
+                }
+
+            }
+
+            NOTIMP;
+        }
+
+
+        if (err != GRIB_NOT_FOUND) {
+            grib_call(err, "freeFormData");
+        }
+
+    } catch(...) {
+        if(keys) {
+            grib_keys_iterator_delete(keys);
+        }
+        throw;
+    }
+
 }
 
 }  // namespace input
