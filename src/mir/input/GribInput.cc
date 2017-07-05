@@ -281,7 +281,9 @@ size_t fix_pl_array_zeros(std::vector<long>& pl) {
 }  // (anonymous namespace)
 
 
-GribInput::GribInput(): grib_(0) {
+GribInput::GribInput():
+    cache_(*this),
+    grib_(0){
 }
 
 
@@ -292,7 +294,7 @@ GribInput::~GribInput() {
 
 const param::MIRParametrisation &GribInput::parametrisation(size_t which) const {
     ASSERT(which == 0);
-    return *this;
+    return cache_;
 }
 
 
@@ -511,7 +513,7 @@ bool GribInput::get(const std::string& name, std::vector<int>& value) const {
     if (get(name, v)) {
         value.clear();
         value.reserve(v.size());
-        for (const long& l: v) {
+        for (const long& l : v) {
             ASSERT(long(int(l)) == l);
             value.push_back(int(l));
         }
@@ -568,7 +570,7 @@ bool GribInput::get(const std::string& name, std::vector<float>& value) const {
     if (get(name, v)) {
         value.clear();
         value.reserve(v.size());
-        for (const double& l: v) {
+        for (const double& l : v) {
             ASSERT(l >= 0);
             value.push_back(float(l));
         }
@@ -653,6 +655,8 @@ bool GribInput::get(const std::string& name, std::vector<std::string>& value) co
 
 bool GribInput::handle(grib_handle *h) {
     eckit::AutoLock<eckit::Mutex> lock(mutex_);
+
+    cache_.reset();
 
     if (grib_) {
         grib_handle_delete(grib_);
