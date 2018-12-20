@@ -10,8 +10,9 @@
 
 #include "mir/input/MIRInput.h"
 
+#include <iomanip>
+
 #include "eckit/exception/Exceptions.h"
-#include "eckit/filesystem/PathName.h"
 #include "eckit/io/StdFile.h"
 #include "eckit/io/AutoCloser.h"
 #include "eckit/thread/AutoLock.h"
@@ -27,18 +28,17 @@ namespace mir {
 namespace input {
 
 
-MIRInput::MIRInput() {
-}
+MIRInput::MIRInput() = default;
 
 
 MIRInput::~MIRInput() = default;
 
 
-grib_handle *MIRInput::gribHandle(size_t which) const {
+grib_handle *MIRInput::gribHandle(size_t) const {
     //ASSERT(which == 0);
-    static grib_handle *handle = 0;
+    static grib_handle *handle = nullptr;
     if (!handle) {
-        handle = grib_handle_new_from_samples(0, "GRIB1");
+        handle = grib_handle_new_from_samples(nullptr, "GRIB1");
         grib_set_long(handle, "paramId", 255);
         ASSERT(handle);
     }
@@ -46,14 +46,21 @@ grib_handle *MIRInput::gribHandle(size_t which) const {
 }
 
 
-bool MIRInput::next() {
+void MIRInput::setAuxilaryFiles(const std::string&, const std::string&) {
     std::ostringstream os;
-    MIRInput &self = *this;
-    os << "MIRInput::next() not implemented for " << self;
+    os << "MIRInput::setAuxilaryFiles() not implemented for " << *this;
     throw eckit::SeriousBug(os.str());
 }
 
-size_t MIRInput::copy(double *values, size_t size) const {
+
+bool MIRInput::next() {
+    std::ostringstream os;
+    os << "MIRInput::next() not implemented for " << *this;
+    throw eckit::SeriousBug(os.str());
+}
+
+
+size_t MIRInput::copy(double*, size_t) const {
     std::ostringstream os;
     os << "MIRInput::copy() not implemented for " << *this;
     throw eckit::SeriousBug(os.str());
@@ -71,8 +78,8 @@ size_t MIRInput::dimensions() const {
 
 namespace {
 static pthread_once_t once = PTHREAD_ONCE_INIT;
-static eckit::Mutex* local_mutex = 0;
-static std::map< unsigned long, MIRInputFactory* >* m = 0;
+static eckit::Mutex* local_mutex = nullptr;
+static std::map< unsigned long, MIRInputFactory* >* m = nullptr;
 static void init() {
     local_mutex = new eckit::Mutex();
     m = new std::map<unsigned long, MIRInputFactory *>();

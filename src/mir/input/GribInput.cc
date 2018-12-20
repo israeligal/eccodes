@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
 #include "eckit/config/Resource.h"
 #include "eckit/exception/Exceptions.h"
@@ -26,11 +27,14 @@
 #include "eckit/serialisation/HandleStream.h"
 #include "eckit/thread/AutoLock.h"
 #include "eckit/types/FloatCompare.h"
+#include "eckit/types/Fraction.h"
 
 #include "mir/config/LibMir.h"
 #include "mir/data/MIRField.h"
 #include "mir/repres/Representation.h"
 #include "mir/util/Grib.h"
+#include "mir/util/Wind.h"
+
 
 namespace mir {
 namespace input {
@@ -41,6 +45,7 @@ namespace {
 
 class Condition {
 public:
+    virtual ~Condition() = default;
     virtual bool eval(grib_handle *) const = 0;
 };
 
@@ -150,102 +155,73 @@ static Condition *is(const char *key, const char *value) {
 static Condition *_and(const Condition *left, const Condition *right) {
     return new ConditionAND(left, right);
 }
+*/
 
 static Condition *_or(const Condition *left, const Condition *right) {
     return new ConditionOR(left, right);
 }
 
+/*
 static Condition *_not(const Condition *c) {
     return new ConditionNOT(c);
 }
 */
 
-static struct {
-    const char *name;
-    const char *key;
-    const Condition *condition;
-} mappings[] = {
-    {"west_east_increment", "iDirectionIncrementInDegrees"},
-    {"south_north_increment", "jDirectionIncrementInDegrees"},
-
-    {"west", "longitudeOfFirstGridPointInDegrees"},
-    {"east", "longitudeOfLastGridPointInDegrees"},
-
-    {"north", "latitudeOfFirstGridPointInDegrees", is("scanningMode", 0L)},
-    {"south", "latitudeOfLastGridPointInDegrees", is("scanningMode", 0L)},
-
-    {"north", "latitudeOfLastGridPointInDegrees", is("jScansPositively", 1L)},
-    {"south", "latitudeOfFirstGridPointInDegrees", is("jScansPositively", 1L)},
-
-    {"truncation", "pentagonalResolutionParameterJ",},  // Assumes triangular truncation
-
-    {"south_pole_latitude", "latitudeOfSouthernPoleInDegrees"},
-    {"south_pole_longitude", "longitudeOfSouthernPoleInDegrees"},
-    {"south_pole_rotation_angle", "angleOfRotationInDegrees"},
-
-    // This will be just called for has()
-    {"gridded", "Nx", is("gridType", "polar_stereographic"),},  // Polar stereo
-    {"gridded", "Ni", is("gridType", "triangular_grid"),},  // Polar stereo
-    {"gridded", "numberOfGridInReference", is("gridType", "unstructured_grid"),},  // numberOfGridInReference is just dummy
-
-    {"gridded", "numberOfPointsAlongAMeridian"},  // Is that always true?
-
-    {"gridname", "gridName"},
-    {"angularPrecision", "angularPrecisionInDegrees"},
-
-    {"spectral", "pentagonalResolutionParameterJ"},
-
-    /// FIXME: Find something that does no clash
-    {"reduced", "numberOfParallelsBetweenAPoleAndTheEquator",  is("isOctahedral", 0L)},
-    {"regular", "N", is("gridType", "regular_gg")},
-    {"octahedral", "numberOfParallelsBetweenAPoleAndTheEquator", is("isOctahedral", 1L)},
-
-    /// TODO: is that a good idea?
-    {"param", "paramId"},
-
-    {0, 0},
-};
-
-
-struct Processing : eckit::NonCopyable {
-    virtual ~Processing() = default;
-    virtual double eval(grib_handle* h) const = 0;
-};
-
-template<typename T>
-struct ProcessingT : Processing {
-    using fun_t = std::function<T(grib_handle*)>;
-    fun_t fun_;
-    ProcessingT(fun_t&& fun) : fun_(fun) {}
-    T eval(grib_handle* h) const {
-        return fun_(h);
-    }
-};
-
-static ProcessingT<double>* inverse(const char *key) {
-    return new ProcessingT<double>([=](grib_handle* h) {
-        double value = 0;
-        GRIB_CALL(grib_get_double(h, key, &value));
-        ASSERT(!eckit::types::is_approximately_equal<double>(value, 0));
-        return 1 / value;
-    });
-}
-
-static struct {
-    const char *name;
-    const Processing *processing;
-} processings[] = {
-    {"angularPrecisionInDegrees", inverse("angularPrecision")},
-    {nullptr, nullptr},
-};
-
-
 static const char *get_key(const std::string &name, grib_handle *h) {
+
+    static struct {
+        const char *name;
+        const char *key;
+        const Condition *condition;
+    } mappings[] = {
+        {"west_east_increment", "iDirectionIncrementInDegrees", nullptr},
+        {"south_north_increment", "jDirectionIncrementInDegrees", nullptr},
+
+        {"west", "longitudeOfFirstGridPointInDegrees", nullptr},
+        {"east", "longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids", is("gridType", "reduced_gg")},
+        {"east", "longitudeOfLastGridPointInDegrees", nullptr},
+
+        {"north", "latitudeOfFirstGridPointInDegrees", is("scanningMode", 0L)},
+        {"south", "latitudeOfLastGridPointInDegrees", is("scanningMode", 0L)},
+
+        {"north", "latitudeOfLastGridPointInDegrees", is("jScansPositively", 1L)},
+        {"south", "latitudeOfFirstGridPointInDegrees", is("jScansPositively", 1L)},
+
+        {"truncation", "pentagonalResolutionParameterJ", nullptr},  // Assumes triangular truncation
+
+        {"south_pole_latitude", "latitudeOfSouthernPoleInDegrees", nullptr},
+        {"south_pole_longitude", "longitudeOfSouthernPoleInDegrees", nullptr},
+        {"south_pole_rotation_angle", "angleOfRotationInDegrees", nullptr},
+
+        // This will be just called for has()
+        {"gridded", "Nx", is("gridType", "polar_stereographic"),},  // Polar stereo
+        {"gridded", "Ni", is("gridType", "triangular_grid"),},  // Polar stereo
+        {"gridded", "numberOfPointsAlongXAxis", is("gridType", "lambert_azimuthal_equal_area"),},
+        {"gridded", "numberOfGridInReference", is("gridType", "unstructured_grid"),},  // numberOfGridInReference is just dummy
+
+        {"gridded", "numberOfPointsAlongAMeridian", nullptr},  // Is that always true?
+
+        {"gridname", "gridName", nullptr},
+        {"angularPrecision", "angularPrecisionInDegrees", nullptr},
+
+        {"spectral", "pentagonalResolutionParameterJ", nullptr},
+
+        /// FIXME: Find something that does no clash
+        {"reduced", "numberOfParallelsBetweenAPoleAndTheEquator",  is("isOctahedral", 0L)},
+        {"regular", "N", is("gridType", "regular_gg")},
+        {"octahedral", "numberOfParallelsBetweenAPoleAndTheEquator", is("isOctahedral", 1L)},
+
+        /// TODO: is that a good idea?
+        {"param", "paramId", nullptr},
+
+        {nullptr, nullptr, nullptr},
+    };
+
     const char *key = name.c_str();
     size_t i = 0;
     while (mappings[i].name) {
         if (name == mappings[i].name) {
-            if (mappings[i].condition == 0 || mappings[i].condition->eval(h)) {
+            if (mappings[i].condition == nullptr || mappings[i].condition->eval(h)) {
                 return mappings[i].key;
             }
         }
@@ -254,6 +230,193 @@ static const char *get_key(const std::string &name, grib_handle *h) {
     return key;
 }
 
+struct Processing : eckit::NonCopyable {
+    virtual ~Processing() = default;
+    virtual bool eval(grib_handle*, long&) const { NOTIMP; }
+    virtual bool eval(grib_handle*, double&) const { NOTIMP; }
+    virtual bool eval(grib_handle*, std::vector<double>&) const { NOTIMP; }
+};
+
+template<typename T>
+struct ProcessingT : Processing {
+    using fun_t = std::function<bool(grib_handle*, T&)>;
+    fun_t fun_;
+    ProcessingT(fun_t&& fun) : fun_(fun) {}
+    bool eval(grib_handle* h, T& v) const override {
+        return fun_(h, v);
+    }
+};
+
+static ProcessingT<long>* is_wind_component_uv() {
+    return new ProcessingT<long>([=](grib_handle* h, long& value) {
+        long paramId = 0;
+        GRIB_CALL(grib_get_long(h, "paramId", &paramId));
+        static const util::Wind::Defaults def;
+        long ind = paramId % 1000;
+        value = (ind == def.u ? 1 : ind == def.v ? 2 : 0);
+        return value;
+    });
+}
+
+static ProcessingT<long>* is_wind_component_vod() {
+    return new ProcessingT<long>([=](grib_handle* h, long& value) {
+        long paramId = 0;
+        GRIB_CALL(grib_get_long(h, "paramId", &paramId));
+        static const util::Wind::Defaults def;
+        long ind = paramId % 1000;
+        value = (ind == def.vo ? 1 : ind == def.d ? 2 : 0);
+        return value;
+    });
+}
+
+static ProcessingT<double>* inverse(const char *key) {
+    return new ProcessingT<double>([=](grib_handle* h, double& value) {
+        double inv = 0;
+        GRIB_CALL(grib_get_double(h, key, &inv));
+        ASSERT(!eckit::types::is_approximately_equal<double>(inv, 0));
+        value = 1. / inv;
+        return true;
+    });
+}
+
+static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids() {
+    return new ProcessingT<double>([](grib_handle* h, double& Lon2) {
+
+        Lon2 = 0;
+        GRIB_CALL(grib_get_double(h, "longitudeOfLastGridPointInDegrees", &Lon2));
+
+        if (grib_is_defined(h, "pl")) {
+
+            double Lon1 = 0;
+            GRIB_CALL(grib_get_double(h, "longitudeOfFirstGridPointInDegrees", &Lon1));
+
+            if (eckit::types::is_approximately_equal<double>(Lon1, 0)) {
+
+                // get pl array maximum and sum
+                // if sum equals values size the grid must be global
+                size_t plSize = 0;
+                GRIB_CALL(grib_get_size(h, "pl", &plSize));
+                ASSERT(plSize);
+
+                std::vector<long> pl(plSize, 0);
+                size_t plSizeAsRead = plSize;
+                GRIB_CALL(grib_get_long_array(h, "pl", pl.data(), &plSizeAsRead));
+                ASSERT(plSize == plSizeAsRead);
+
+                long plMax = 0;
+                long plSum = 0;
+                for (auto& p : pl) {
+                    plSum += p;
+                    if (plMax < p) {
+                        plMax = p;
+                    }
+                }
+                ASSERT(plMax > 0);
+
+                size_t valuesSize;
+                GRIB_CALL(grib_get_size(h, "values", &valuesSize));
+
+                if (size_t(plSum) == valuesSize) {
+
+                    long angularPrecision;
+                    GRIB_CALL(grib_get_long(h, "angularPrecision", &angularPrecision));
+                    ASSERT(angularPrecision > 0);
+
+                    eckit::Fraction eps(1L, angularPrecision);
+                    eckit::Fraction Lon2_expected(360L * (plMax - 1L), plMax);
+
+                    if (!eckit::types::is_approximately_equal<double>(Lon2, Lon2_expected, eps)) {
+
+                        std::ostringstream msgs;
+                        msgs.precision(32);
+                        msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded (reduced_gg):"
+                             << "\n" "encoded:  " << Lon2
+                             << "\n" "expected: " << Lon2_expected
+                             << std::endl;
+                        const std::string msg(msgs.str());
+
+                        static bool abortIfWronglyEncodedGRIB = eckit::Resource<bool>("$MIR_ABORT_IF_WRONGLY_ENCODED_GRIB", false);
+                        if (abortIfWronglyEncodedGRIB) {
+                            eckit::Log::error() << msg << std::endl;
+                            throw eckit::UserError(msg);
+                        }
+
+                        eckit::Log::warning() << msg << std::endl;
+                        Lon2 = Lon2_expected;
+                    }
+                }
+
+            }
+        }
+
+        return true;
+    });
+};
+
+static ProcessingT<double>* divide(const char *key, double denominator) {
+    ASSERT(!eckit::types::is_approximately_equal<double>(denominator, 0));
+    return new ProcessingT<double>([=](grib_handle* h, double& value) {
+        GRIB_CALL(grib_get_double(h, key, &value));
+        value /= denominator;
+        return true;
+    });
+}
+
+static ProcessingT<std::vector<double>>* vector_double(std::initializer_list<const char*> keys) {
+    return new ProcessingT<std::vector<double>>([=](grib_handle* h, std::vector<double>& values) {
+        ASSERT(keys.size());
+        const std::vector<const char*> keys_(keys);
+
+        values.assign(keys_.size(), 0);
+        for (size_t i = 0; i < keys_.size(); ++i) {
+            if (!grib_is_defined(h, keys_[i])) {
+                return false;
+            }
+            GRIB_CALL(grib_get_double(h, keys_[i], &values[i]));
+        }
+        return true;
+    });
+}
+
+template<typename T>
+static bool get_value(const std::string& name, grib_handle* h, T& value) {
+
+    static struct {
+            const char* name;
+            const Processing* processing;
+            const Condition *condition;
+        } processings[] = {
+
+        {"angularPrecisionInDegrees", inverse("angularPrecision"), nullptr},
+        {"longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids", longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids(), nullptr},
+
+        {"xDirectionGridLengthInMetres", divide("xDirectionGridLengthInMillimetres", 1000.), nullptr},
+        {"yDirectionGridLengthInMetres", divide("yDirectionGridLengthInMillimetres", 1000.), nullptr},
+        {"standardParallelInDegrees", divide("standardParallelInMicrodegrees", 1000000.), nullptr},
+        {"centralLongitudeInDegrees", divide("centralLongitudeInMicrodegrees", 1000000.), nullptr},
+
+        { "grid", vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
+          _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll")) },
+
+        {"is_wind_component_uv", is_wind_component_uv(), nullptr},
+        {"is_wind_component_vod", is_wind_component_vod(), nullptr},
+
+        {nullptr, nullptr, nullptr}
+    };
+
+    size_t i = 0;
+    while (processings[i].name) {
+        if (name == processings[i].name) {
+            if (processings[i].condition == nullptr || processings[i].condition->eval(h)) {
+                ASSERT(processings[i].processing);
+                return processings[i].processing->eval(h, value);
+            }
+        }
+        i++;
+    }
+
+    return false;
+}
 
 void get_unique_missing_value(const MIRValuesVector& values, double& missing) {
     ASSERT(values.size());
@@ -280,10 +443,10 @@ size_t fix_pl_array_zeros(std::vector<long>& pl) {
     size_t new_entries = 0;
 
     // if a zero is found, copy the *following* non-zero value into the range "current entry -> non-zero entry"
-    for (std::vector<long>::iterator p = pl.begin(); p != pl.end(); ++p) {
+    for (auto p = pl.begin(); p != pl.end(); ++p) {
         if (*p == 0) {
 
-            std::vector<long>::iterator nz = std::find_if(p, pl.end(), [](long x) { return x != 0; });
+            auto nz = std::find_if(p, pl.end(), [](long x) { return x != 0; });
             if (nz != pl.end()) {
                 new_entries += size_t(*nz) * size_t(std::distance(p, nz));
                 std::fill(p, nz, *nz);
@@ -293,10 +456,10 @@ size_t fix_pl_array_zeros(std::vector<long>& pl) {
     }
 
     // if a zero is found, copy the *previous* non-zero value into the range "non-zero entry -> current entry"
-    for (std::vector<long>::reverse_iterator p = pl.rbegin(); p != pl.rend(); ++p) {
+    for (auto p = pl.rbegin(); p != pl.rend(); ++p) {
         if (*p == 0) {
 
-            std::vector<long>::reverse_iterator nz = std::find_if(p, pl.rend(), [](long x) { return x != 0; });
+            auto nz = std::find_if(p, pl.rend(), [](long x) { return x != 0; });
             if (nz != pl.rend()) {
                 new_entries += size_t(*nz) * size_t(std::distance(p, nz));
                 std::fill(p, nz, *nz);
@@ -317,12 +480,12 @@ size_t fix_pl_array_zeros(std::vector<long>& pl) {
 
 GribInput::GribInput():
     cache_(*this),
-    grib_(0) {
+    grib_(nullptr) {
 }
 
 
 GribInput::~GribInput() {
-    handle(0); // Will delete handle
+    handle(nullptr); // Will delete handle
 }
 
 
@@ -338,8 +501,13 @@ data::MIRField GribInput::field() const {
     eckit::AutoLock<eckit::Mutex> lock(mutex_);
 
     ASSERT(grib_);
-    // TODO: this is only here for debugging purposes
-    // GRIB_CALL(grib_set_double(grib_, "missingValue", 1.e15));
+
+    long localDefinitionNumber = 0;
+    if (grib_get_long(grib_, "localDefinitionNumber", &localDefinitionNumber) == GRIB_SUCCESS) {
+        if (localDefinitionNumber == 4) {
+            throw eckit::UserError("GribInput: GRIB localDefinitionNumber=4 ('ocean') not supported");
+        }
+    }
 
     size_t count;
     GRIB_CALL(grib_get_size(grib_, "values", &count));
@@ -390,7 +558,7 @@ data::MIRField GribInput::field() const {
 
             ASSERT(pl.size() == pl_fixed.size());
             size_t i = 0;
-            for (std::vector<long>::iterator p1 = pl.begin(), p2 = pl_fixed.begin(); p1 != pl.end(); ++p1, ++p2) {
+            for (auto p1 = pl.begin(), p2 = pl_fixed.begin(); p1 != pl.end(); ++p1, ++p2) {
                 if (*p1 == 0) {
                     ASSERT(*p2 > 0);
                     size_t Ni = size_t(*p2);
@@ -496,7 +664,7 @@ bool GribInput::get(const std::string& name, long& value) const {
 
     // FIXME: make sure that 'value' is not set if GRIB_MISSING_LONG
     if (err == GRIB_NOT_FOUND || value == GRIB_MISSING_LONG) {
-        return FieldParametrisation::get(name, value);
+        return get_value(key, grib_, value) || FieldParametrisation::get(name, value);
     }
 
     if (err) {
@@ -524,26 +692,17 @@ bool GribInput::get(const std::string& name, double& value) const {
     eckit::AutoLock<eckit::Mutex> lock(mutex_);
 
     ASSERT(grib_);
-    const std::string key = get_key(name, grib_);
-    int err = grib_get_double(grib_, key.c_str(), &value);
+    const char *key = get_key(name, grib_);
+    int err = grib_get_double(grib_, key, &value);
 
     // FIXME: make sure that 'value' is not set if GRIB_MISSING_DOUBLE
     if (err == GRIB_NOT_FOUND || value == GRIB_MISSING_DOUBLE) {
-
-        for (size_t i = 0; processings[i].name; ++i) {
-            if (key == processings[i].name) {
-                ASSERT(processings[i].processing);
-                value = processings[i].processing->eval(grib_);
-                return true;
-            }
-        }
-
-        return FieldParametrisation::get(name, value);
+        return get_value(key, grib_, value) || FieldParametrisation::get(name, value);
     }
 
     if (err) {
         // eckit::Log::debug<LibMir>() << "grib_get_double(" << name << ",key=" << key << ") failed " << err << std::endl;
-        GRIB_ERROR(err, key.c_str());
+        GRIB_ERROR(err, key);
     }
 
     // eckit::Log::debug<LibMir>() << "grib_get_double(" << name << ",key=" << key << ") " << value << std::endl;
@@ -664,6 +823,10 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     ASSERT(grib_);
     const char *key = get_key(name, grib_);
 
+    if (get_value(key, grib_, value)) {
+        return true;
+    }
+
     size_t count = 0;
     int err = grib_get_size(grib_, key, &count);
 
@@ -691,7 +854,7 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     return true;
 }
 
-bool GribInput::get(const std::string& name, std::vector<std::string>& value) const {
+bool GribInput::get(const std::string&, std::vector<std::string>&) const {
     NOTIMP;
 }
 
@@ -707,7 +870,7 @@ bool GribInput::handle(grib_handle *h) {
         grib_handle_delete(grib_);
     }
     grib_ = h;
-    return h != 0;
+    return h != nullptr;
 }
 
 
@@ -717,13 +880,13 @@ void GribInput::auxilaryValues(const std::string& path, std::vector<double>& val
     eckit::AutoStdFile f(path);
 
     int e;
-    grib_handle *h = 0;
+    grib_handle *h = nullptr;
 
     // We cannot use GribFileInput to read these files, because lat/lon files are also
     // has grid_type = triangular_grid, and we will create a loop
 
     try {
-        h = grib_handle_new_from_file(0, f, &e);
+        h = grib_handle_new_from_file(nullptr, f, &e);
         grib_call(e, path.c_str());
         size_t count;
         GRIB_CALL(grib_get_size(h, "values", &count));
@@ -739,7 +902,9 @@ void GribInput::auxilaryValues(const std::string& path, std::vector<double>& val
 
         grib_handle_delete(h);
     } catch (...) {
-        if (h) grib_handle_delete(h);
+        if (h) {
+            grib_handle_delete(h);
+        }
         throw;
     }
 }
@@ -795,7 +960,7 @@ void GribInput::marsRequest(std::ostream& out) const {
             sep = ",";
         }
         grib_keys_iterator_delete(keys);
-        keys = 0;
+        keys = nullptr;
 
         size_t size = 0;
         int err = grib_get_size(grib_, "freeFormData", &size);
