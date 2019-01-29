@@ -329,7 +329,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
 
                         std::ostringstream msgs;
                         msgs.precision(32);
-                        msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded (reduced_gg):"
+                        msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded:"
                              << "\n" "encoded:  " << Lon2
                              << "\n" "expected: " << Lon2_expected
                              << std::endl;
@@ -870,7 +870,17 @@ bool GribInput::handle(grib_handle *h) {
         grib_handle_delete(grib_);
     }
     grib_ = h;
-    return h != nullptr;
+
+    if (h != nullptr) {
+        long value = 0;
+        GRIB_CALL(grib_get_long(h, "7777", &value));
+        if (value != 7777) {
+            throw eckit::SeriousBug("GribInput: grib_handle not terminated with 7777.");
+        }
+        return true;
+    }
+
+    return false;
 }
 
 
