@@ -188,6 +188,8 @@ static const char *get_key(const std::string &name, grib_handle *h) {
         {"south", "latitudeOfFirstGridPointInDegrees", is("jScansPositively", 1L)},
 
         {"truncation", "pentagonalResolutionParameterJ", nullptr},  // Assumes triangular truncation
+        {"accuracy", "bitsPerValue", nullptr},
+        {"packing", "packingType", nullptr},
 
         {"south_pole_latitude", "latitudeOfSouthernPoleInDegrees", nullptr},
         {"south_pole_longitude", "longitudeOfSouthernPoleInDegrees", nullptr},
@@ -331,8 +333,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                         msgs.precision(32);
                         msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded:"
                              << "\n" "encoded:  " << Lon2
-                             << "\n" "expected: " << Lon2_expected
-                             << std::endl;
+                             << "\n" "expected: " << double(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
                         const std::string msg(msgs.str());
 
                         static bool abortIfWronglyEncodedGRIB = eckit::Resource<bool>("$MIR_ABORT_IF_WRONGLY_ENCODED_GRIB", false);
@@ -362,17 +363,18 @@ static ProcessingT<double>* divide(const char *key, double denominator) {
     });
 }
 
-static ProcessingT<std::vector<double>>* vector_double(std::initializer_list<const char*> keys) {
+static ProcessingT<std::vector<double>>* vector_double(std::initializer_list<std::string> keys) {
+    const std::vector<std::string> keys_(keys);
     return new ProcessingT<std::vector<double>>([=](grib_handle* h, std::vector<double>& values) {
         ASSERT(keys.size());
-        const std::vector<const char*> keys_(keys);
 
         values.assign(keys_.size(), 0);
-        for (size_t i = 0; i < keys_.size(); ++i) {
-            if (!grib_is_defined(h, keys_[i])) {
+        size_t i =0;
+        for (auto& key : keys_) {
+            if (!grib_is_defined(h, key.c_str())) {
                 return false;
             }
-            GRIB_CALL(grib_get_double(h, keys_[i], &values[i]));
+            GRIB_CALL(grib_get_double(h, key.c_str(), &values[i++]));
         }
         return true;
     });
@@ -874,9 +876,6 @@ bool GribInput::handle(grib_handle *h) {
     if (h != nullptr) {
         long value = 0;
         GRIB_CALL(grib_get_long(h, "7777", &value));
-        if (value != 7777) {
-            throw eckit::SeriousBug("GribInput: grib_handle not terminated with 7777.");
-        }
         return true;
     }
 
