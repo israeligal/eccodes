@@ -189,6 +189,8 @@ static const char *get_key(const std::string &name, grib_handle *h) {
 
         {"north", "latitudeOfLastGridPointInDegrees", is("jScansPositively", 1L)},
         {"south", "latitudeOfFirstGridPointInDegrees", is("jScansPositively", 1L)},
+        {"north", "latitudeOfFirstGridPointInDegrees", nullptr},
+        {"south", "latitudeOfLastGridPointInDegrees", nullptr},
 
         {"truncation", "pentagonalResolutionParameterJ", nullptr},  // Assumes triangular truncation
         {"accuracy", "bitsPerValue", nullptr},
@@ -910,12 +912,9 @@ bool GribInput::handle(grib_handle *h) {
     eckit::AutoLock<eckit::Mutex> lock(mutex_);
 
     FieldParametrisation::reset();
-
     cache_.reset();
 
-    if (grib_) {
-        grib_handle_delete(grib_);
-    }
+    grib_handle_delete(grib_);
     grib_ = h;
 
     if (h != nullptr) {
@@ -956,9 +955,7 @@ void GribInput::auxilaryValues(const std::string& path, std::vector<double>& val
 
         grib_handle_delete(h);
     } catch (...) {
-        if (h) {
-            grib_handle_delete(h);
-        }
+        grib_handle_delete(h);
         throw;
     }
 }
