@@ -33,6 +33,7 @@
 #include "mir/data/MIRField.h"
 #include "mir/repres/Representation.h"
 #include "mir/util/Grib.h"
+#include "mir/util/LongitudeDouble.h"
 #include "mir/util/Wind.h"
 
 
@@ -167,6 +168,7 @@ static Condition *_not(const Condition *c) {
 }
 */
 
+
 static const char *get_key(const std::string &name, grib_handle *h) {
 
     static struct {
@@ -174,6 +176,7 @@ static const char *get_key(const std::string &name, grib_handle *h) {
         const char *key;
         const Condition *condition;
     } mappings[] = {
+        {"west_east_increment", "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids", is("gridType", "regular_ll")},
         {"west_east_increment", "iDirectionIncrementInDegrees", nullptr},
         {"south_north_increment", "jDirectionIncrementInDegrees", nullptr},
 
@@ -333,8 +336,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                         msgs.precision(32);
                         msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded:"
                              << "\n" "encoded:  " << Lon2
-                             << "\n" "expected: " << Lon2_expected
-                             << std::endl;
+                             << "\n" "expected: " << double(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
                         const std::string msg(msgs.str());
 
                         static bool abortIfWronglyEncodedGRIB = eckit::Resource<bool>("$MIR_ABORT_IF_WRONGLY_ENCODED_GRIB", false);
@@ -349,6 +351,43 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                 }
 
             }
+        }
+
+        return true;
+    });
+};
+
+static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids() {
+    return new ProcessingT<double>([](grib_handle* h, double& we) {
+
+        long iScansPositively = 0L;
+        GRIB_CALL(grib_get_long(h, "iScansPositively", &iScansPositively));
+        ASSERT(iScansPositively == 1L);
+
+        ASSERT(GRIB_CALL(grib_get_double(h, "iDirectionIncrementInDegrees", &we)));
+        ASSERT(we > 0.);
+
+        double Lon1 = 0.;
+        double Lon2 = 0.;
+        GRIB_CALL(grib_get_double(h, "longitudeOfFirstGridPointInDegrees", &Lon1));
+        GRIB_CALL(grib_get_double(h, "longitudeOfLastGridPointInDegrees", &Lon2));
+
+        Lon2 = LongitudeDouble(Lon2).normalise(Lon1).value();
+        ASSERT(Lon2 >= Lon1);
+
+        // angles are within +-1/2 precision, so (Lon2 - Lon1 + we) uses factor 3*1/2
+        double eps = 0.;
+        std::unique_ptr<Processing> precision_in_degrees(inverse("angularPrecision"));
+        ASSERT(precision_in_degrees->eval(h, eps));
+        eps *= 1.5;
+
+        double globe = LongitudeDouble::GLOBE.value();
+        if (eckit::types::is_approximately_equal(Lon2 - Lon1 + we, globe, eps)) {
+            long Ni = 0;
+            GRIB_CALL(grib_get_long(h, "Ni", &Ni));
+            ASSERT(Ni > 0);
+
+            we = globe / Ni;
         }
 
         return true;
@@ -392,6 +431,7 @@ static bool get_value(const std::string& name, grib_handle* h, T& value) {
 
         {"angularPrecisionInDegrees", inverse("angularPrecision"), nullptr},
         {"longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids", longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids(), nullptr},
+        {"iDirectionIncrementInDegrees_fix_for_periodic_regular_grids", iDirectionIncrementInDegrees_fix_for_periodic_regular_grids(), nullptr},
 
         {"xDirectionGridLengthInMetres", divide("xDirectionGridLengthInMillimetres", 1000.), nullptr},
         {"yDirectionGridLengthInMetres", divide("yDirectionGridLengthInMillimetres", 1000.), nullptr},
