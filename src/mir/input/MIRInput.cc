@@ -17,10 +17,9 @@
 #include "eckit/io/StdFile.h"
 #include "eckit/thread/AutoLock.h"
 #include "eckit/thread/Mutex.h"
-#include "eckit/thread/Once.h"
 
 #include "mir/config/LibMir.h"
-#include "mir/input/DummyInput.h"
+#include "mir/input/ArtificialInput.h"
 #include "mir/input/GribFileInput.h"
 #include "mir/util/Grib.h"
 
@@ -35,9 +34,9 @@ MIRInput::MIRInput() = default;
 MIRInput::~MIRInput() = default;
 
 
-grib_handle *MIRInput::gribHandle(size_t) const {
-    //ASSERT(which == 0);
-    static grib_handle *handle = nullptr;
+grib_handle* MIRInput::gribHandle(size_t) const {
+    // ASSERT(which == 0);
+    static grib_handle* handle = nullptr;
     if (!handle) {
         handle = grib_handle_new_from_samples(nullptr, "GRIB1");
         grib_set_long(handle, "paramId", 255);
@@ -47,9 +46,9 @@ grib_handle *MIRInput::gribHandle(size_t) const {
 }
 
 
-void MIRInput::setAuxilaryFiles(const std::string&, const std::string&) {
+void MIRInput::setAuxiliaryInformation(const std::string&) {
     std::ostringstream os;
-    os << "MIRInput::setAuxilaryFiles() not implemented for " << *this;
+    os << "MIRInput::setAuxiliaryInformation() not implemented for " << *this;
     throw eckit::SeriousBug(os.str());
 }
 
@@ -78,18 +77,17 @@ size_t MIRInput::dimensions() const {
 
 
 namespace {
-static pthread_once_t once = PTHREAD_ONCE_INIT;
-static eckit::Mutex* local_mutex = nullptr;
-static std::map< unsigned long, MIRInputFactory* >* m = nullptr;
+static pthread_once_t once                          = PTHREAD_ONCE_INIT;
+static eckit::Mutex* local_mutex                    = nullptr;
+static std::map<unsigned long, MIRInputFactory*>* m = nullptr;
 static void init() {
     local_mutex = new eckit::Mutex();
-    m = new std::map<unsigned long, MIRInputFactory *>();
+    m           = new std::map<unsigned long, MIRInputFactory*>();
 }
-}  // (anonymous namespace)
+}  // namespace
 
 
-MIRInputFactory::MIRInputFactory(unsigned long magic):
-    magic_(magic) {
+MIRInputFactory::MIRInputFactory(unsigned long magic) : magic_(magic) {
     pthread_once(&once, init);
     eckit::AutoLock<eckit::Mutex> lock(local_mutex);
 
@@ -111,49 +109,56 @@ MIRInputFactory::~MIRInputFactory() {
 
 
 static void put(std::ostream& out, unsigned long magic) {
-    out << "0x" << std::hex <<  std::setfill('0') << std::setw(8)  << magic << std::dec <<  std::setfill(' ');
+    out << "0x" << std::hex << std::setfill('0') << std::setw(8) << magic << std::dec << std::setfill(' ');
 
-    char p[5] = {0,};
+    unsigned char p[5] = {
+        0,
+    };
 
     for (int i = 3; i >= 0; i--) {
         unsigned char c = magic & 0xff;
         magic >>= 8;
-        if (isprint(c)) {
-            p[i] = c;
-        } else {
-            p[i] = '.';
-        }
+        p[i] = isprint(c) ? c : '.';
     }
 
     out << " (" << p << ")";
 }
 
 
-MIRInput *MIRInputFactory::build(const std::string& path, const param::MIRParametrisation& parametrisation) {
+MIRInput* MIRInputFactory::build(const std::string& path, const param::MIRParametrisation& parametrisation) {
     pthread_once(&once, init);
     eckit::AutoLock<eckit::Mutex> lock(local_mutex);
 
-    bool dummy = false;
-    if (parametrisation.get("dummy", dummy) && dummy) {
-        return new DummyInput();
+    const param::MIRParametrisation& user = parametrisation.userParametrisation();
+
+    std::string input;
+    user.get("input", input);
+
+    // attach information after construction (pe. extra files), so virtual methods are specific to child class
+    auto aux = [&input](MIRInput* in) {
+        ASSERT(in);
+        if (!input.empty()) {
+            in->setAuxiliaryInformation(input);
+        }
+        return in;
+    };
+
+    std::string synth;
+    if (user.get("artificial-input", synth)) {
+        return aux(ArtificialInputFactory::build(synth, user));
     }
 
     eckit::AutoStdFile f(path);
-    unsigned long magic = 0;
-    char smagic[] = "????";
-    char *p = smagic;
+    unsigned long magic    = 0;
+    unsigned char smagic[] = "????";
+    unsigned char* p       = smagic;
 
     for (size_t i = 0; i < 4; i++) {
         unsigned char c;
         if (fread(&c, 1, 1, f)) {
             magic <<= 8;
             magic |= c;
-
-            if (isprint(c)) {
-                *p++ = c;
-            } else {
-                *p++ = '.';
-            }
+            p[i] = isprint(c) ? c : '.';
         }
     }
 
@@ -167,10 +172,10 @@ MIRInput *MIRInputFactory::build(const std::string& path, const param::MIRParame
         eckit::Log::warning() << std::endl;
 
         eckit::Log::warning() << "MIRInputFactory: assuming 'GRIB'" << std::endl;
-        return new GribFileInput(path);
+        return aux(new GribFileInput(path));
     }
 
-    return (*j).second->make(path);
+    return aux((*j).second->make(path));
 }
 
 
@@ -189,4 +194,3 @@ void MIRInputFactory::list(std::ostream& out) {
 
 }  // namespace input
 }  // namespace mir
-
