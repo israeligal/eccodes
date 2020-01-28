@@ -3,6 +3,7 @@
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *
  * In applying this licence, ECMWF does not waive the privileges and immunities
  * granted to it by virtue of its status as an intergovernmental organisation nor
  * does it submit to any jurisdiction.
@@ -11,6 +12,7 @@
 
 #include "mir/input/MIRInput.h"
 
+#include <cstdio>
 #include <iomanip>
 
 #include "eckit/exception/Exceptions.h"
@@ -155,7 +157,7 @@ MIRInput* MIRInputFactory::build(const std::string& path, const param::MIRParame
 
     for (size_t i = 0; i < 4; i++) {
         unsigned char c;
-        if (fread(&c, 1, 1, f)) {
+        if (std::fread(&c, 1, 1, f)) {
             magic <<= 8;
             magic |= c;
             p[i] = isprint(c) ? c : '.';

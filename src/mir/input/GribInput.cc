@@ -3,15 +3,11 @@
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *
  * In applying this licence, ECMWF does not waive the privileges and immunities
  * granted to it by virtue of its status as an intergovernmental organisation nor
  * does it submit to any jurisdiction.
  */
-
-/// @author Baudouin Raoult
-/// @author Pedro Maciel
-/// @author Tiago Quintino
-/// @date April 2015
 
 
 #include "mir/input/GribInput.h"
@@ -171,6 +167,18 @@ static Condition *_not(const Condition *c) {
     return new ConditionNOT(c);
 }
 */
+
+
+void wrongly_encoded_grib(std::string msg) {
+    static bool abortIfWronglyEncodedGRIB = eckit::Resource<bool>("$MIR_ABORT_IF_WRONGLY_ENCODED_GRIB", false);
+    if (abortIfWronglyEncodedGRIB) {
+        eckit::Log::error() << msg << std::endl;
+        throw eckit::UserError(msg);
+    }
+    else {
+        eckit::Log::warning() << msg << std::endl;
+    }
+}
 
 
 static const char *get_key(const std::string &name, grib_handle *h) {
@@ -345,18 +353,12 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
 
                         std::ostringstream msgs;
                         msgs.precision(32);
-                        msgs << "GribInput: longitudeOfLastGridPointInDegrees is wrongly encoded:"
+                        msgs << "GribInput: wrongly encoded longitudeOfLastGridPointInDegrees:"
                              << "\n" "encoded:  " << Lon2
                              << "\n" "expected: " << double(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
-                        const std::string msg(msgs.str());
 
-                        static bool abortIfWronglyEncodedGRIB = eckit::Resource<bool>("$MIR_ABORT_IF_WRONGLY_ENCODED_GRIB", false);
-                        if (abortIfWronglyEncodedGRIB) {
-                            eckit::Log::error() << msg << std::endl;
-                            throw eckit::UserError(msg);
-                        }
+                        wrongly_encoded_grib(msgs.str());
 
-                        eckit::Log::warning() << msg << std::endl;
                         Lon2 = Lon2_expected;
                     }
                 }
@@ -380,8 +382,11 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
 
         double Lon1 = 0.;
         double Lon2 = 0.;
+        long Ni     = 0;
         GRIB_CALL(grib_get_double(h, "longitudeOfFirstGridPointInDegrees", &Lon1));
         GRIB_CALL(grib_get_double(h, "longitudeOfLastGridPointInDegrees", &Lon2));
+        GRIB_CALL(grib_get_long(h, "Ni", &Ni));
+        ASSERT(Ni > 0);
 
         Lon2 = LongitudeDouble(Lon2).normalise(Lon1).value();
         ASSERT(Lon2 >= Lon1);
@@ -394,11 +399,20 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
 
         double globe = LongitudeDouble::GLOBE.value();
         if (eckit::types::is_approximately_equal(Lon2 - Lon1 + we, globe, eps)) {
-            long Ni = 0;
-            GRIB_CALL(grib_get_long(h, "Ni", &Ni));
-            ASSERT(Ni > 0);
-
             we = globe / Ni;
+        }
+        else if (!eckit::types::is_approximately_equal(Lon1 + (Ni - 1) * we, Lon2, eps)) {
+
+            // TODO refactor, not really specific to "periodic regular grids", but useful
+            std::ostringstream msgs;
+            msgs.precision(32);
+            msgs << "GribInput: wrongly encoded iDirectionIncrementInDegrees:"
+                    "\n" "encoded: " << we
+                 << "\n" "Ni: " << Ni
+                 << "\n" "longitudeOfFirstGridPointInDegree: " << Lon1
+                 << "\n" "longitudeOfLastGridPointInDegrees: " << Lon2;
+
+            wrongly_encoded_grib(msgs.str());
         }
 
         return true;
@@ -504,6 +518,8 @@ void get_unique_missing_value(const MIRValuesVector& values, double& missing) {
 
 
 size_t fix_pl_array_zeros(std::vector<long>& pl) {
+    wrongly_encoded_grib("GribInput: wrongly encoded pl array contains zeros");
+
     size_t new_entries = 0;
 
     // if a zero is found, copy the *following* non-zero value into the range "current entry -> non-zero entry"
@@ -536,7 +552,6 @@ size_t fix_pl_array_zeros(std::vector<long>& pl) {
     ASSERT(new_entries);
     return new_entries;
 }
-
 
 
 }  // (anonymous namespace)
@@ -573,6 +588,13 @@ data::MIRField GribInput::field() const {
         }
     }
 
+    long earthIsOblate;
+    if (GRIB_GET(grib_get_long(grib_, "earthIsOblate", &earthIsOblate))) {
+        if (earthIsOblate != 0) {
+            throw eckit::UserError("GribInput: GRIB earthIsOblate!=0 not supported");
+        }
+    }
+
     size_t count;
     GRIB_CALL(grib_get_size(grib_, "values", &count));
 
@@ -587,11 +609,10 @@ data::MIRField GribInput::field() const {
     double missing;
     GRIB_CALL(grib_get_double(grib_, "missingValue", &missing));
 
-    long numberOfMissingValues;
-    GRIB_CALL(grib_get_long(grib_, "numberOfMissingValues", &numberOfMissingValues));
-
-    if (!numberOfMissingValues) {
-        // ensure missingValue is unique, so values are not wrongly "missing"
+    // Ensure missingValue is unique, so values are not wrongly "missing"
+    long numberOfMissingValues = 0;
+    if (grib_get_long(grib_, "numberOfMissingValues", &numberOfMissingValues) == GRIB_SUCCESS &&
+        numberOfMissingValues == 0) {
         get_unique_missing_value(values, missing);
     }
 
