@@ -225,6 +225,8 @@ static const char* get_key(const std::string& name, grib_handle* h) {
         {"south_pole_longitude", "longitudeOfSouthernPoleInDegrees", nullptr},
         {"south_pole_rotation_angle", "angleOfRotationInDegrees", nullptr},
 
+        {"proj", "projString", nullptr},
+
         // This will be just called for has()
         {
             "gridded",
@@ -505,7 +507,9 @@ static bool get_value(const std::string& name, grib_handle* h, T& value) {
          _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
         {"grid", vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
          is("gridType", "lambert_azimuthal_equal_area")},
-        {"grid", vector_double({"DxInMetres", "DyInMetres"}), is("gridType", "lambert")},
+        {"grid", vector_double({"DxInMetres", "DyInMetres"}),
+         _or(is("gridType", "lambert"), is("gridType", "polar_stereographic"))},
+        {"grid", vector_double({"DiInMetres", "DjInMetres"}), is("gridType", "mercator")},
 
         {"rotation", vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
          _or(_or(_or(is("gridType", "rotated_ll"), is("gridType", "rotated_gg")), is("gridType", "rotated_sh")),
@@ -711,12 +715,6 @@ data::MIRField GribInput::field() const {
             size_t pl_sum = size_t(std::accumulate(pl.begin(), pl.end(), 0));
             ASSERT(pl_sum == values.size());
         }
-    }
-
-    // apply user-defined fixes, if any
-    static GribFixes gribFixes;
-    if (gribFixes.fix(*this, cache_.cache_)) {
-        wrongly_encoded_grib("GribInput: wrongly encoded GRIB (user-defined fixes)");
     }
 
     data::MIRField field(cache_, missingValuesPresent != 0, missing);
@@ -1023,6 +1021,13 @@ bool GribInput::handle(grib_handle* h) {
     if (h != nullptr) {
         long value = 0;
         GRIB_CALL(codes_get_long(h, "7777", &value));
+
+        // apply user-defined fixes, if any
+        static GribFixes gribFixes;
+        if (gribFixes.fix(*this, cache_.cache_)) {
+            wrongly_encoded_grib("GribInput: wrongly encoded GRIB (user-defined fixes)");
+        }
+
         return true;
     }
 
