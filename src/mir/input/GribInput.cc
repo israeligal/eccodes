@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <sstream>
 
@@ -55,6 +56,7 @@ public:
     virtual bool eval(grib_handle*) const = 0;
 };
 
+
 template <class T>
 class ConditionT : public Condition {
     const char* key_;
@@ -85,6 +87,7 @@ bool ConditionT<long>::eval(grib_handle* h) const {
     return value_ == value;
 }
 
+
 template <>
 bool ConditionT<double>::eval(grib_handle* h) const {
     double value;
@@ -103,6 +106,7 @@ bool ConditionT<double>::eval(grib_handle* h) const {
 
     return value_ == value;  // Want an epsilon?
 }
+
 
 template <>
 bool ConditionT<std::string>::eval(grib_handle* h) const {
@@ -124,14 +128,20 @@ bool ConditionT<std::string>::eval(grib_handle* h) const {
     return value_ == buffer;
 }
 
+
 class ConditionOR : public Condition {
     const Condition* left_;
     const Condition* right_;
     bool eval(grib_handle* h) const override { return left_->eval(h) || right_->eval(h); }
+    ~ConditionOR() {
+        delete right_;
+        delete left_;
+    }
 
 public:
     ConditionOR(const Condition* left, const Condition* right) : left_(left), right_(right) {}
 };
+
 
 /*
 class ConditionAND : public Condition {
@@ -143,6 +153,7 @@ public:
     ConditionAND(const Condition* left, const Condition* right) : left_(left), right_(right) {}
 };
 */
+
 
 /*
 class ConditionNOT : public Condition {
@@ -222,7 +233,6 @@ static const char* get_key(const std::string& name, grib_handle* h) {
 
         {"truncation", "pentagonalResolutionParameterJ", nullptr},  // Assumes triangular truncation
         {"accuracy", "bitsPerValue", nullptr},
-        {"packing", "packingType", nullptr},
 
         {"south_pole_latitude", "latitudeOfSouthernPoleInDegrees", nullptr},
         {"south_pole_longitude", "longitudeOfSouthernPoleInDegrees", nullptr},
@@ -253,10 +263,13 @@ static const char* get_key(const std::string& name, grib_handle* h) {
         {"gridded_named", "gridName", nullptr},
 
         {"grid", "gridName",
-         _or(_or(_or(is("gridType", "regular_gg"), is("gridType", "reduced_gg")), is("gridType", "rotated_gg")),
-             is("gridType", "reduced_rotated_gg"))},
+         _or(_or(_or(_or(is("gridType", "regular_gg"), is("gridType", "reduced_gg")), is("gridType", "rotated_gg")),
+                 is("gridType", "reduced_rotated_gg")),
+             is("gridType", "unstructured_grid"))},
 
         {"spectral", "pentagonalResolutionParameterJ", nullptr},
+
+        {"uid", "uuidOfHGrid", is("gridType", "unstructured_grid")},
 
         /// FIXME: Find something that does no clash
         {"reduced", "numberOfParallelsBetweenAPoleAndTheEquator", is("isOctahedral", 0L)},
@@ -305,6 +318,7 @@ static ProcessingT<long>* is_wind_component_uv() {
     });
 }
 
+
 static ProcessingT<long>* is_wind_component_vod() {
     return new ProcessingT<long>([](grib_handle* h, long& value) {
         long paramId = 0;
@@ -315,6 +329,7 @@ static ProcessingT<long>* is_wind_component_vod() {
         return value;
     });
 }
+
 
 static ProcessingT<double>* angular_precision() {
     return new ProcessingT<double>([](grib_handle* h, double& value) {
@@ -337,6 +352,7 @@ static ProcessingT<double>* angular_precision() {
         return true;
     });
 }
+
 
 static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids() {
     return new ProcessingT<double>([](grib_handle* h, double& Lon2) {
@@ -406,6 +422,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
     });
 };
 
+
 static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids() {
     return new ProcessingT<double>([](grib_handle* h, double& we) {
         long iScansPositively = 0L;
@@ -463,6 +480,7 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
     });
 };
 
+
 static ProcessingT<std::vector<double>>* vector_double(std::initializer_list<std::string> keys) {
     const std::vector<std::string> keys_(keys);
     return new ProcessingT<std::vector<double>>([=](grib_handle* h, std::vector<double>& values) {
@@ -480,7 +498,8 @@ static ProcessingT<std::vector<double>>* vector_double(std::initializer_list<std
     });
 }
 
-static ProcessingT<std::string>* unstructured_grid_orca() {
+
+static ProcessingT<std::string>* packing() {
     return new ProcessingT<std::string>([](grib_handle* h, std::string& value) {
         auto get = [](grib_handle* h, const char* key) -> std::string {
             if (codes_is_defined(h, key) != 0) {
@@ -497,29 +516,24 @@ static ProcessingT<std::string>* unstructured_grid_orca() {
             return "";
         };
 
-        auto type    = get(h, "unstructuredGridType");
-        auto subtype = get(h, "unstructuredGridSubtype");
-        if (type.empty() || subtype.empty()) {
-            return false;
+        auto packingType = get(h, "packingType");
+        for (std::string prefix : {"grid_", "spectral_"}) {
+            if (packingType.find(prefix) == 0) {
+                value = packingType.substr(prefix.size());
+                std::replace(value.begin(), value.end(), '_', '-');
+                return true;
+            }
         }
 
-        value = type + "_" + subtype[0];
-        return true;
+        return false;
     });
 }
 
 
-template <typename T>
-struct processing_t {
-    const std::string name;
-    const ProcessingT<T>* processing;
-    const Condition* condition;
-};
-
-
-template <typename T>
-static bool get_value(const std::string& name, grib_handle* h, T& value, const std::vector<processing_t<T>>& process) {
-    for (auto& p : process) {
+template <typename T, typename P>
+static bool get_value(const std::string& name, grib_handle* h, T& value, const P& process) {
+    for (size_t i = 0; process[i].name != nullptr; ++i) {
+        auto& p = process[i];
         if (name == p.name) {
             if (p.condition == nullptr || p.condition->eval(h)) {
                 ASSERT(p.processing);
@@ -795,23 +809,40 @@ bool GribInput::get(const std::string& name, long& value) const {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
     ASSERT(grib_);
-    const char* key = get_key(name, grib_);
-    if (std::string(key).empty()) {
+    std::string key = get_key(name, grib_);
+    if (key.empty()) {
         return false;
     }
 
+    std::string packing;
+    if (key == "bitsPerValue" && get("packing", packing) && packing == "ieee") {
+        // GRIB2 Section 5 Code Table 7
+        // NOTE: has to be done here as GRIBs packingType=grid_ieee ignores bitsPerValue (usually 0?)
+        long precision = 0;
+        GRIB_CALL(codes_get_long(grib_, "precision", &precision));
+        value = precision == 1 ? 32 : precision == 2 ? 64 : precision == 3 ? 128 : 0;
+        return value != 0;
+    }
+
     // FIXME: make sure that 'value' is not set if CODES_MISSING_LONG
-    int err = codes_get_long(grib_, key, &value);
-    if (err == CODES_NOT_FOUND || codes_is_missing(grib_, key, &err) != 0) {
-        static const std::vector<processing_t<long>> process{
+    int err = codes_get_long(grib_, key.c_str(), &value);
+    if (err == CODES_NOT_FOUND || codes_is_missing(grib_, key.c_str(), &err) != 0) {
+        static struct {
+            const char* name;
+            const ProcessingT<long>* processing;
+            const Condition* condition;
+        } process[] = {
             {"is_wind_component_uv", is_wind_component_uv(), nullptr},
-            {"is_wind_component_vod", is_wind_component_vod(), nullptr}};
-        return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
+            {"is_wind_component_vod", is_wind_component_vod(), nullptr},
+            {nullptr, nullptr, nullptr},
+        };
+
+        return get_value(key.c_str(), grib_, value, process) || FieldParametrisation::get(name, value);
     }
 
     if (err != 0) {
         Log::debug() << "codes_get_long(" << name << ",key=" << key << ") failed " << err << std::endl;
-        GRIB_ERROR(err, key);
+        GRIB_ERROR(err, key.c_str());
     }
 
     // Log::debug() << "codes_get_long(" << name << ",key=" << key << ") " << value << std::endl;
@@ -841,12 +872,19 @@ bool GribInput::get(const std::string& name, double& value) const {
     // FIXME: make sure that 'value' is not set if CODES_MISSING_DOUBLE
     int err = codes_get_double(grib_, key, &value);
     if (err == CODES_NOT_FOUND || codes_is_missing(grib_, key, &err) != 0) {
-        static const std::vector<processing_t<double>> process{
+        static struct {
+            const char* name;
+            const ProcessingT<double>* processing;
+            const Condition* condition;
+        } process[] = {
             {"angular_precision", angular_precision(), nullptr},
             {"longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids",
              longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids(), nullptr},
             {"iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
-             iDirectionIncrementInDegrees_fix_for_periodic_regular_grids(), nullptr}};
+             iDirectionIncrementInDegrees_fix_for_periodic_regular_grids(), nullptr},
+            {nullptr, nullptr, nullptr},
+        };
+
         return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
     }
 
@@ -941,8 +979,15 @@ bool GribInput::get(const std::string& name, std::string& value) const {
     int err     = codes_get_string(grib_, key, buffer, &size);
 
     if (err == CODES_NOT_FOUND) {
-        static const std::vector<processing_t<std::string>> process{
-            {"grid", unstructured_grid_orca(), is("gridType", "unstructured_grid")}};
+        static struct {
+            const char* name;
+            const ProcessingT<std::string>* processing;
+            const Condition* condition;
+        } process[] = {
+            {"packing", packing(), nullptr},
+            {nullptr, nullptr, nullptr},
+        };
+
         return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
     }
 
@@ -979,7 +1024,11 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
         return false;
     }
 
-    static const std::vector<processing_t<std::vector<double>>> process{
+    static struct {
+        const char* name;
+        const ProcessingT<std::vector<double>>* processing;
+        const Condition* condition;
+    } process[] = {
         {"grid", vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
          _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
         {"grid", vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
@@ -989,7 +1038,9 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
         {"grid", vector_double({"DiInMetres", "DjInMetres"}), is("gridType", "mercator")},
         {"rotation", vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
          _or(_or(_or(is("gridType", "rotated_ll"), is("gridType", "rotated_gg")), is("gridType", "rotated_sh")),
-             is("gridType", "reduced_rotated_gg"))}};
+             is("gridType", "reduced_rotated_gg"))},
+        {nullptr, nullptr, nullptr},
+    };
 
     if (get_value(key, grib_, value, process)) {
         return true;
