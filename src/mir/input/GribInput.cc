@@ -23,7 +23,6 @@
 #include "eckit/io/Buffer.h"
 #include "eckit/io/MemoryHandle.h"
 #include "eckit/io/StdFile.h"
-#include "eckit/parser/YAMLParser.h"
 #include "eckit/serialisation/HandleStream.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
@@ -35,6 +34,7 @@
 #include "mir/util/Grib.h"
 #include "mir/util/Log.h"
 #include "mir/util/LongitudeDouble.h"
+#include "mir/util/ValueMap.h"
 #include "mir/util/Wind.h"
 
 
@@ -133,7 +133,7 @@ class ConditionOR : public Condition {
     const Condition* left_;
     const Condition* right_;
     bool eval(grib_handle* h) const override { return left_->eval(h) || right_->eval(h); }
-    ~ConditionOR() {
+    ~ConditionOR() override {
         delete right_;
         delete left_;
     }
@@ -837,7 +837,7 @@ bool GribInput::get(const std::string& name, long& value) const {
             {nullptr, nullptr, nullptr},
         };
 
-        return get_value(key.c_str(), grib_, value, process) || FieldParametrisation::get(name, value);
+        return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
     }
 
     if (err != 0) {
@@ -1140,11 +1140,10 @@ void GribInput::auxilaryValues(const std::string& path, std::vector<double>& val
 }
 
 
-void GribInput::setAuxiliaryInformation(const std::string& yaml) {
+void GribInput::setAuxiliaryInformation(const util::ValueMap& map) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-    eckit::ValueMap keyValue = eckit::YAMLParser::decodeString(yaml);
-    for (const auto& kv : keyValue) {
+    for (const auto& kv : map) {
         if (kv.first == "latitudes") {
             Log::debug() << "Loading auxilary file '" << kv.second << "'" << std::endl;
             auxilaryValues(kv.second, latitudes_);
