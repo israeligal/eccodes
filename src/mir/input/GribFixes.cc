@@ -43,20 +43,26 @@ GribFixes::~GribFixes() {
 }
 
 
-bool GribFixes::fix(const param::MIRParametrisation& input, param::SimpleParametrisation& fixed) {
+void GribFixes::fix(const param::MIRParametrisation& input, param::SimpleParametrisation& fixed) {
     static util::recursive_mutex mtx;
     util::lock_guard<util::recursive_mutex> lock(mtx);
 
+    // select best fix by number of matching keys
+    size_t match           = 0;
+    fix_t::second_type fix = nullptr;
+
     for (auto& f : fixes_) {
-        if ((f.first)->matches(input)) {
+        if ((f.first)->matches(input) && match < (f.first)->size()) {
             ASSERT(f.second);
-            Log::warning() << "GribFixes: applying fixes " << *(f.second) << std::endl;
-            f.second->copyValuesTo(fixed);
-            return true;
+            match = (f.first)->size();
+            fix   = f.second;
         }
     }
 
-    return false;
+    if (fix != nullptr) {
+        Log::warning() << "GribFixes: applying fixes " << *fix << std::endl;
+        fix->copyValuesTo(fixed);
+    }
 }
 
 
@@ -65,7 +71,7 @@ void GribFixes::print(std::ostream& s) const {
     eckit::JSON json(s);
 
     json.startObject();
-    for (auto& fix : fixes_) {
+    for (const auto& fix : fixes_) {
         json << *(fix.first) << *(fix.second);
     }
     json.endObject();
@@ -89,7 +95,7 @@ void GribFixes::readConfigurationFiles() {
     for (const auto& rule : rules) {
 
         // how the input is to be identified
-        auto id = new param::SimpleParametrisation;
+        auto* id = new param::SimpleParametrisation;
         ASSERT(id);
 
         for (auto& ids : StringTools::split(",", rule.first)) {
@@ -109,10 +115,10 @@ void GribFixes::readConfigurationFiles() {
         }
 
         // how the input is to be corrected
-        auto fix = new param::SimpleParametrisation;
+        auto* fix = new param::SimpleParametrisation;
         ASSERT(fix);
 
-        for (auto& fixes : static_cast<const eckit::ValueList&>(rule.second)) {
+        for (const auto& fixes : static_cast<const eckit::ValueList&>(rule.second)) {
             util::ValueMap map(fixes);
             map.set(*fix);
         }
