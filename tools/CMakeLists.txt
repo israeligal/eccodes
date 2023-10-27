@@ -62,6 +62,11 @@ foreach( tool ${ecc_tools_binaries_extra} )
                             LIBS       ecc_tools )
 endforeach()
 
+ecbuild_add_executable(
+    TARGET  grib_get_data_geo
+    SOURCES grib_get_data_geo.cc
+    LIBS    ecc_tools eckit_geo )
+
 
 # grib_count/bufr_count etc. Same source code, different executable names
 ecbuild_add_executable( TARGET     grib_count
