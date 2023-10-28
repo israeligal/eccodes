@@ -1,384 +1,174 @@
 /*
- * (C) Copyright 2005- ECMWF.
+ * (C) Copyright 1996- ECMWF.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  *
- * In applying this licence, ECMWF does not waive the privileges and immunities granted to it by
- * virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
+ * In applying this licence, ECMWF does not waive the privileges and immunities
+ * granted to it by virtue of its status as an intergovernmental organisation nor
+ * does it submit to any jurisdiction.
  */
 
-#include "grib_tools.h"
 
-static void print_key_values(grib_values* values, int values_count);
-static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h);
+#include <memory>
+#include <string>
+#include <vector>
 
-grib_option grib_options[] = {
-    /*  {id, args, help}, on, command_line, value */
-    {"S", nullptr, nullptr, 1, 0, nullptr},
-    {"M", nullptr, nullptr, 0, 1, nullptr},
-    {"m:", "missingValue",
-     "\n\t\tThe missing value is given through this option."
-     "\n\t\tAny string is allowed and it is printed in place of the missing"
-     "\n\t\tvalues. Default is to skip the missing values.\n",
-     0, 1, nullptr},
-    {"p:", nullptr, nullptr, 0, 1, nullptr},
-    {"F:", "format", "\n\t\tC style format for data values. Default is \"%.10e\"\n", 0, 1, nullptr},
-    {"L:", "format", "\n\t\tC style format for latitudes/longitudes. Default is \"%9.3f%9.3f\"\n", 0, 1, nullptr},
-    {"w:", nullptr, nullptr, 0, 1, nullptr},
-    {"s:", nullptr, nullptr, 0, 1, nullptr},
-    {"f", nullptr, nullptr, 0, 1, nullptr},
-    {"G", nullptr, nullptr, 0, 1, nullptr},
-    {"7", nullptr, nullptr, 0, 1, nullptr},
-    {"X:", nullptr, nullptr, 0, 1, nullptr},
-    {"V", nullptr, nullptr, 0, 1, nullptr}};
+#include "eccodes.h"
 
-const char* tool_description =
-    "Print a latitude, longitude, data values list.\n"
-    "\tNote: Rotated grids are first unrotated";
-const char* tool_name       = "grib_get_data_geo";
-const char* tool_online_doc = "";
-const char* tool_usage      = "[options] grib_file grib_file ...";
+#include "eckit/exception/Exceptions.h"
+#include "eckit/io/Buffer.h"
+#include "eckit/io/BufferedHandle.h"
+#include "eckit/io/StdFile.h"
+#include "eckit/log/Log.h"
+#include "eckit/option/CmdArgs.h"
+#include "eckit/option/SimpleOption.h"
+#include "eckit/runtime/Tool.h"
+#include "eckit/system/Library.h"
 
-extern FILE* dump_file;
 
-int grib_options_count = sizeof(grib_options) / sizeof(grib_option);
+namespace eccodes::tools {
 
-int main(int argc, char* argv[]) {
-    return grib_tool(argc, argv);
+
+auto& LOG = eckit::Log::info();
+auto& ERR = eckit::Log::error();
+
+using coord_t  = std::vector<double>;
+using values_t = std::vector<double>;
+using prec_t   = decltype(LOG.precision());
+
+
+struct Field {
+    size_t dimensions() const { return 0; }
+    values_t values(size_t) const { return {}; }
+};
+
+
+struct Input {
+    bool next() const { return false; }
+    Field field() const { return {}; }
+};
+
+
+class GribGetData : public eckit::Tool {
+protected:
+    void run() override;
+
+    int numberOfPositionalArguments() const { return -1; }
+    int minimumPositionalArguments() const { return 1; }
+
+    std::vector<eckit::option::Option*> options_;
+
+public:
+    GribGetData(int argc, char** argv) : eckit::Tool(argc, argv, "ECKIT_GEO_HOME") {
+        options_.push_back(new eckit::option::SimpleOption<prec_t>("precision", "Output precision"));
+        options_.push_back(new eckit::option::SimpleOption<bool>("ecc", "eccodes latitude/longitude"));
+        options_.push_back(new eckit::option::SimpleOption<bool>("geo", "eckit::geo latitude/longitude"));
+    }
+
+    static void usage(const std::string& tool) {
+        LOG << "\nPrint a latitude, longitude, value list."
+               "\n"
+               "\nUsage: "
+            << tool
+            << " [file.grib [file.grib [...]]"
+               "\nExamples:"
+               "\n  % "
+            << tool
+            << " 1.grib"
+               "\n  % "
+            << tool << " --ecc 1.grib 2.grib 3.grib" << std::endl;
+    }
+};
+
+
+bool codes_check_(int e, const char* call, bool missingOK = false) {
+    if (static_cast<bool>(e)) {
+        if (missingOK && (e == CODES_NOT_FOUND)) {
+            return false;
+        }
+
+        std::ostringstream os;
+        os << call << ": " << codes_get_error_message(e);
+        throw eckit::SeriousBug(os.str());
+    }
+
+    return true;
 }
 
-int grib_tool_before_getopt(grib_runtime_options* options) {
-    return 0;
-}
 
-int grib_tool_init(grib_runtime_options* options) {
-    return 0;
-}
+void GribGetData::run() {
+    eckit::option::CmdArgs args(&usage, options_, numberOfPositionalArguments(), minimumPositionalArguments());
 
-int grib_tool_new_filename_action(grib_runtime_options* options, const char* file) {
-    return 0;
-}
+    auto geo = args.getBool("geo", true);
+    auto ecc = args.getBool("ecc", false);
 
-int grib_tool_new_file_action(grib_runtime_options* options, grib_tools_file* file) {
-    exit_if_input_is_directory(tool_name, file->name);
-    return 0;
-}
-
-int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h) {
-    int err = 0;
-
-    double missingValue    = 9999;
-    int skip_missing       = 1;
-    char* missing_string   = nullptr;
-    int i                  = 0;
-    grib_values* values    = nullptr;
-    grib_iterator* iter    = nullptr;
-    char format_values[32] = {
-        0,
-    };
-    char format_latlons[32] = {
-        0,
-    };
-    const char* default_format_values  = "%.10e";
-    const char* default_format_latlons = "%9.3f%9.3f";
-    int print_keys                     = grib_options_on("p:");
-    long numberOfPoints                = 0;
-    long bitmapPresent                 = 0;
-    long* bitmap                       = nullptr; /* bitmap array */
-    size_t bmp_len                     = 0;
-    double* data_values                = nullptr;
-    double* lats                       = nullptr;
-    double* lons                       = nullptr;
-    int n                              = 0;
-    size_t size                        = 0;
-    size_t num_bytes                   = 0;
-    long hasMissingValues              = 0;
-
-    if (options->skip == 0) {
-        if (options->set_values_count != 0) {
-            err = grib_set_values(h, options->set_values, options->set_values_count);
-        }
-        if (err != GRIB_SUCCESS && (options->fail != 0)) {
-            exit(err);
-        }
+    if (prec_t precision = 0; args.get("precision", precision)) {
+        LOG.precision(precision);
     }
 
-    if (grib_options_on("m:") != 0) {
-        /* User wants to see missing values */
-        char* theEnd = nullptr;
-        double mval  = 0;
-        char* kmiss  = grib_options_get_option("m:");
-        char* p      = kmiss;
-        skip_missing = 0;
-        while (*p != ':' && *p != '\0') {
-            p++;
-        }
-        if (*p == ':' && *(p + 1) != '\0') {
-            *p             = '\0';
-            missing_string = strdup(p + 1);
-        }
-        else {
-            missing_string = strdup(kmiss);
-        }
-        mval = strtod(kmiss, &theEnd);
-        if (kmiss != theEnd && *theEnd == '\0') {
-            missingValue = mval;
-        }
-        grib_set_double(h, "missingValue", missingValue);
-        /*missing_string=grib_options_get_option("m:");*/
-    }
 
-    if (grib_options_on("F:") != 0) {
-        const char* str = grib_options_get_option("F:");
-        snprintf(format_values, sizeof(format_values), "%s", str);
-    }
-    else {
-        snprintf(format_values, sizeof(format_values), "%s", default_format_values);
-    }
+    size_t count = 0;
+    for (const auto& arg : args) {
+        LOG << "\n'" << arg << "' #" << ++count << std::endl;
 
-    if (grib_options_on("L:") != 0) {
-        /* Do a very basic sanity check */
-        const char* str = grib_options_get_option("L:");
-        if (string_count_char(str, '%') != 2) {
-            fprintf(stderr,
-                    "ERROR: Invalid lats/lons format option \"%s\".\n"
-                    "       The default is: \"%s\"."
-                    " For higher precision, try: \"%%12.6f%%12.6f\"\n",
-                    str, default_format_latlons);
-            exit(1);
-        }
-        snprintf(format_latlons, sizeof(format_latlons), "%s ",
-                 str); /* Add a final space to separate from data values */
-    }
-    else {
-        snprintf(format_latlons, sizeof(format_latlons), "%s ", default_format_latlons);
-    }
+        eckit::PathName path(arg);
+        eckit::DataHandle* dh = new eckit::BufferedHandle(path.fileHandle());
+        dh->openForRead();
 
-    if ((err = grib_get_long(h, "numberOfPoints", &numberOfPoints)) != GRIB_SUCCESS) {
-        fprintf(stderr, "ERROR: Unable to get number of points\n");
-        exit(err);
-    }
 
-    iter = grib_iterator_new(h, 0, &err);
+        eckit::AutoStdFile f(arg);
+        eckit::Buffer buffer(64 * 1024 * 1024);
 
-    num_bytes   = (numberOfPoints + 1) * sizeof(double);
-    data_values = (double*)calloc(numberOfPoints + 1, sizeof(double));
-    if (data_values == nullptr) {
-        fprintf(stderr, "ERROR: Failed to allocate %zu bytes for data values (number of points=%ld)\n", num_bytes,
-                numberOfPoints);
-        exit(GRIB_OUT_OF_MEMORY);
-    }
+        for (int e = CODES_SUCCESS;;) {
+            auto len = buffer.size();
 
-    if (iter != nullptr) {
-        double* lat = nullptr;
-        double* lon = nullptr;
-        double* val = nullptr;
-        lats        = (double*)calloc(numberOfPoints + 1, sizeof(double));
-        lons        = (double*)calloc(numberOfPoints + 1, sizeof(double));
-        lat         = lats;
-        lon         = lons;
-        val         = data_values;
-        while (grib_iterator_next(iter, lat++, lon++, val++) != 0) {
-        }
-    }
-    else if (err == GRIB_NOT_IMPLEMENTED || err == GRIB_SUCCESS) {
-        size = numberOfPoints;
-        err  = grib_get_double_array(h, "values", data_values, &size);
-        if (err != 0) {
-            grib_context_log(h->context, GRIB_LOG_ERROR, "Cannot decode values: %s", grib_get_error_message(err));
-            exit(1);
-        }
-        if (size != (size_t)numberOfPoints) {
-            fprintf(stderr, "ERROR: Wrong number of points %ld\n", numberOfPoints);
-            if (grib_options_on("f") != 0) {
-                exit(1);
+            e = wmo_read_any_from_file(f, buffer, &len);
+            if (e == CODES_END_OF_FILE) {
+                break;
             }
-        }
-    }
-    else {
-        grib_context_log(h->context, GRIB_LOG_ERROR, "%s", grib_get_error_message(err));
-        exit(err);
-    }
 
-    /* Cater for GRIBs which have missing values but no bitmap */
-    /* See ECC-511 */
-    GRIB_CHECK(grib_get_long(h, "missingValuesPresent", &hasMissingValues), nullptr);
-    GRIB_CHECK(grib_get_long(h, "bitmapPresent", &bitmapPresent), nullptr);
-    if (bitmapPresent != 0) {
-        GRIB_CHECK(grib_get_size(h, "bitmap", &bmp_len), nullptr);
-        bitmap = (long*)malloc(bmp_len * sizeof(long));
-        GRIB_CHECK(grib_get_long_array(h, "bitmap", bitmap, &bmp_len), nullptr);
-    }
+            codes_check_(e, "wmo_read_any_from_file");
+            ASSERT(e == CODES_SUCCESS);
 
-    if (iter != nullptr) {
-        fprintf(dump_file, "Latitude Longitude ");
-    }
+            // eccodes latitude/longitude
 
-    fprintf(dump_file, "Value");
+            auto* h = codes_handle_new_from_message(nullptr, buffer, len);
+            ASSERT(h != nullptr);
 
-    if (print_keys != 0) {
-        for (i = 0; i < options->print_keys_count; i++) {
-            fprintf(dump_file, " %s", options->print_keys[i].name);
-        }
-    }
+            long N = 0;
+            CODES_CHECK(codes_get_long(h, "numberOfDataPoints", &N), "codes_get_long");
+            ASSERT(0 < N);
 
-    fprintf(dump_file, "\n");
+            LOG << N << std::endl;
 
-    if (print_keys != 0) {
-        values = get_key_values(options, h);
-    }
+            if (ecc) {
+                coord_t lats_ecc;
+                coord_t lons_ecc;
+                lats_ecc.reserve(N);
+                lons_ecc.reserve(N);
 
-    if (skip_missing == 0) {
-        /* Show missing values in data */
-        for (i = 0; i < numberOfPoints; i++) {
-            int is_missing_val = 0;
-            if (hasMissingValues != 0) {
-                if (bitmapPresent != 0) {
-                    is_missing_val = static_cast<int>(bitmap[i] == 0);
+                auto* it = codes_grib_iterator_new(h, 0, &e);
+                CODES_CHECK(e, nullptr);
+
+                for (double lat = 0, lon = 0, value = 0; codes_grib_iterator_next(it, &lat, &lon, &value) != 0;) {
+                    lats_ecc.push_back(lat);
+                    lons_ecc.push_back(lon);
                 }
-                else {
-                    is_missing_val = static_cast<int>(data_values[i] == missingValue);
-                }
-            }
-            if (iter != nullptr) {
-                fprintf(dump_file, format_latlons, lats[i], lons[i]);
+
+                codes_grib_iterator_delete(it);
             }
 
-            if (is_missing_val != 0) {
-                fprintf(dump_file, "%s", missing_string);
-            }
-            else {
-                fprintf(dump_file, format_values, data_values[i]);
-            }
-
-            if (print_keys != 0) {
-                print_key_values(values, options->print_keys_count);
-            }
-            fprintf(dump_file, "\n");
-            n++;
+            CODES_CHECK(codes_handle_delete(h), "codes_handle_delete");
         }
     }
-    else if (skip_missing == 1) {
-        /* Skip the missing values in data */
-        for (i = 0; i < numberOfPoints; i++) {
-            int is_missing_val = 0;
-            if (hasMissingValues != 0) {
-                if (bitmapPresent != 0) {
-                    is_missing_val = static_cast<int>(bitmap[i] == 0);
-                }
-                else {
-                    is_missing_val = static_cast<int>(data_values[i] == missingValue);
-                }
-            }
-            if (is_missing_val == 0) {
-                if (iter != nullptr) {
-                    fprintf(dump_file, format_latlons, lats[i], lons[i]);
-                }
-                fprintf(dump_file, format_values, data_values[i]);
-                if (print_keys != 0) {
-                    print_key_values(values, options->print_keys_count);
-                }
-                fprintf(dump_file, "\n");
-                n++;
-            }
-        }
-    }
-
-    if (iter != nullptr) {
-        grib_iterator_delete(iter);
-    }
-    if (bitmap != nullptr) {
-        free(bitmap);
-    }
-
-    free(data_values);
-    free(missing_string);
-    if (iter != nullptr) {
-        free(lats);
-        free(lons);
-    }
-
-    return 0;
 }
 
-int grib_tool_skip_handle(grib_runtime_options* options, grib_handle* h) {
-    grib_handle_delete(h);
-    return 0;
-}
 
-void grib_tool_print_key_values(grib_runtime_options* options, grib_handle* h) {
-    grib_print_key_values(options, h);
-}
+}  // namespace eccodes::tools
 
-int grib_tool_finalise_action(grib_runtime_options* options) {
-    return 0;
-}
 
-static void print_key_values(grib_values* values, int values_count) {
-    int i = 0;
-    for (i = 0; i < values_count; i++) {
-        fprintf(dump_file, " %s", values[i].string_value);
-    }
-}
-
-static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h) {
-    int i                      = 0;
-    int ret                    = 0;
-    char value[MAX_STRING_LEN] = {
-        0,
-    };
-    const char* notfound = "not found";
-
-    for (i = 0; i < options->print_keys_count; i++) {
-        size_t len = MAX_STRING_LEN;
-        ret        = GRIB_SUCCESS;
-
-        if ((grib_is_missing(h, options->print_keys[i].name, &ret) != 0) && ret == GRIB_SUCCESS) {
-            options->print_keys[i].type = GRIB_TYPE_MISSING;
-            snprintf(value, sizeof(value), "MISSING");
-        }
-        else if (ret != GRIB_NOT_FOUND) {
-            if (options->print_keys[i].type == GRIB_TYPE_UNDEFINED) {
-                grib_get_native_type(h, options->print_keys[i].name, &(options->print_keys[i].type));
-            }
-
-            switch (options->print_keys[i].type) {
-                case GRIB_TYPE_STRING:
-                    ret = grib_get_string(h, options->print_keys[i].name, value, &len);
-                    break;
-                case GRIB_TYPE_DOUBLE:
-                    ret = grib_get_double(h, options->print_keys[i].name, &(options->print_keys[i].double_value));
-                    snprintf(value, sizeof(value), "%g", options->print_keys[i].double_value);
-                    break;
-                case GRIB_TYPE_LONG:
-                    ret = grib_get_long(h, options->print_keys[i].name, &(options->print_keys[i].long_value));
-                    snprintf(value, sizeof(value), "%ld", (long)options->print_keys[i].long_value);
-                    break;
-                default:
-                    fprintf(dump_file, "invalid type for %s\n", options->print_keys[i].name);
-                    exit(1);
-            }
-        }
-
-        if (ret != GRIB_SUCCESS) {
-            if (options->fail != 0) {
-                GRIB_CHECK_NOLINE(ret, options->print_keys[i].name);
-            }
-            if (ret == GRIB_NOT_FOUND) {
-                strcpy(value, notfound);
-            }
-            else {
-                fprintf(dump_file, "%s %s\n", grib_get_error_message(ret), options->print_keys[i].name);
-                exit(ret);
-            }
-        }
-        options->print_keys[i].string_value = strdup(value);
-    }
-    return options->print_keys;
-}
-
-int grib_no_handle_action(grib_runtime_options* options, int err) {
-    fprintf(dump_file, "\t\t\"ERROR: unreadable message\"\n");
-    return 0;
+int main(int argc, char** argv) {
+    eccodes::tools::GribGetData tool(argc, argv);
+    return tool.start();
 }
