@@ -407,6 +407,10 @@ if( HAVE_MEMFS )
     list(APPEND ECCODES_EXTRA_LIBRARIES eccodes_memfs)
 endif()
 
+list( APPEND eccodes_src_files
+    eccodes/geo/GribInput.cc
+    eccodes/geo/GribInput.h )
+
 ecbuild_add_library( TARGET    eccodes
                      SOURCES   ${CMAKE_CURRENT_BINARY_DIR}/grib_api_version.cc
                               # griby.cc gribl.cc
@@ -414,7 +418,7 @@ ecbuild_add_library( TARGET    eccodes
                      #PRIVATE_LIBS      ${ECCODES_EXTRA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CMATH_LIBRARIES}
                      PRIVATE_INCLUDES "${AEC_INCLUDE_DIRS}" "${PNG_INCLUDE_DIRS}"
                      PRIVATE_LIBS ${ECCODES_EXTRA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${AEC_LIBRARIES} ${PNG_LIBRARIES}
-                     PUBLIC_LIBS  ${CMATH_LIBRARIES} ${THREADS_LIBRARIES}
+                     PUBLIC_LIBS  ${CMATH_LIBRARIES} ${THREADS_LIBRARIES} eckit_geo
                      TEMPLATES ${eccodes_extra_src_files}
                      INSTALL_HEADERS_LIST
                               grib_api.h

@@ -10,44 +10,60 @@
  */
 
 
-#include "mir/input/GribInput.h"
+#include "eccodes/geo/GribInput.h"
 
 #include <algorithm>
 #include <cstring>
 #include <functional>
-#include <iterator>
+#include <initializer_list>
 #include <memory>
-#include <numeric>
-#include <ostream>
 #include <sstream>
-#include <utility>
-#include <vector>
+
+#define ECKIT_THREADS
+
+#if defined(ECKIT_THREADS)
+#include "eckit/thread/AutoLock.h"
+#include "eckit/thread/Mutex.h"
+#else
+#include <mutex>
+#endif
 
 #include "eckit/config/Resource.h"
-#include "eckit/io/Buffer.h"
-#include "eckit/io/MemoryHandle.h"
-#include "eckit/io/StdFile.h"
-#include "eckit/serialisation/HandleStream.h"
+#include "eckit/geo/PointLonLat.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
-
-#include "mir/config/LibMir.h"
-#include "mir/data/MIRField.h"
-#include "mir/grib/Config.h"
-#include "mir/repres/Representation.h"
-#include "mir/util/Exceptions.h"
-#include "mir/util/Grib.h"
-#include "mir/util/Log.h"
-#include "mir/util/LongitudeDouble.h"
-#include "mir/util/Mutex.h"
-#include "mir/util/ValueMap.h"
-#include "mir/util/Wind.h"
+#include "eckit/value/Value.h"
 
 
-namespace mir::input {
+using eckit::Log;
+
+
+namespace eccodes::geo {
 
 
 namespace {
+
+
+const eckit::Value EMPTY_ROOT;
+
+
+inline bool grib_call(int e, const char* call, bool NOT_FOUND_IS_OK = false) {
+    if (static_cast<bool>(e)) {
+        if (NOT_FOUND_IS_OK && (e == CODES_NOT_FOUND)) {
+            return false;
+        }
+
+        std::ostringstream os;
+        os << call << ": " << codes_get_error_message(e);
+        throw ::eckit::SeriousBug(os.str());
+    }
+    return true;
+}
+
+
+#define GRIB_CALL(a) grib_call(a, #a)
+#define GRIB_GET(a) grib_call(a, #a, true)
+#define GRIB_ERROR(a, b) grib_call(a, b)
 
 
 class Condition {
@@ -71,7 +87,8 @@ class ConditionT : public Condition {
     bool eval(grib_handle* /*unused*/) const override;
 
 public:
-    ConditionT(const char* key, const T& value) : key_(key), value_(value) {}
+    ConditionT(const char* key, const T& value) :
+        key_(key), value_(value) {}
 };
 
 
@@ -86,8 +103,6 @@ bool ConditionT<long>::eval(grib_handle* h) const {
     }
 
     if (err != 0) {
-        // Log::debug() << "ConditionT<long>::eval(" << ",key=" << key_ << ") failed " << err <<
-        // std::endl;
         GRIB_ERROR(err, key_);
     }
 
@@ -106,8 +121,6 @@ bool ConditionT<double>::eval(grib_handle* h) const {
     }
 
     if (err != 0) {
-        // Log::debug() << "ConditionT<double>::eval(" << ",key=" << key_ << ") failed " << err <<
-        // std::endl;
         GRIB_ERROR(err, key_);
     }
 
@@ -127,8 +140,6 @@ bool ConditionT<std::string>::eval(grib_handle* h) const {
     }
 
     if (err != 0) {
-        Log::debug() << "ConditionT<std::string>::eval("
-                     << ",key=" << key_ << ") failed " << err << std::endl;
         GRIB_ERROR(err, key_);
     }
 
@@ -146,7 +157,8 @@ class ConditionOR : public Condition {
     }
 
 public:
-    ConditionOR(const Condition* left, const Condition* right) : left_(left), right_(right) {}
+    ConditionOR(const Condition* left, const Condition* right) :
+        left_(left), right_(right) {}
 
     ConditionOR(const ConditionOR&)            = delete;
     ConditionOR(ConditionOR&&)                 = delete;
@@ -195,49 +207,53 @@ void wrongly_encoded_grib(const std::string& msg) {
 
     if (abortIfWronglyEncodedGRIB) {
         Log::error() << msg << std::endl;
-        throw exception::UserError(msg);
+        throw eckit::UserError(msg);
     }
 
     Log::warning() << msg << std::endl;
 }
 
 
-size_t fix_pl_array_zeros(std::vector<long>& pl) {
-    wrongly_encoded_grib("GribInput: wrongly encoded pl array contains zeros");
+}  // namespace
 
-    size_t new_entries = 0;
 
-    // if a zero is found, copy the *following* non-zero value into the range "current entry -> non-zero entry"
-    for (auto p = pl.begin(); p != pl.end(); ++p) {
-        if (*p == 0) {
+namespace util {
 
-            auto nz = std::find_if(p, pl.end(), [](long x) { return x != 0; });
-            if (nz != pl.end()) {
-                new_entries += size_t(*nz) * size_t(std::distance(p, nz));
-                std::fill(p, nz, *nz);
-            }
-        }
-    }
 
-    // if a zero is found, copy the *previous* non-zero value into the range "non-zero entry -> current entry"
-    for (auto p = pl.rbegin(); p != pl.rend(); ++p) {
-        if (*p == 0) {
+#if defined(ECKIT_THREADS)
 
-            auto nz = std::find_if(p, pl.rend(), [](long x) { return x != 0; });
-            if (nz != pl.rend()) {
-                new_entries += size_t(*nz) * size_t(std::distance(p, nz));
-                std::fill(p, nz, *nz);
-            }
-        }
-    }
 
-    ASSERT(0 == std::count(pl.begin(), pl.end(), 0));
-    ASSERT(new_entries);
-    return new_entries;
+using recursive_mutex = eckit::Mutex;
+
+template <typename T>
+using lock_guard = typename eckit::AutoLock<T>;
+
+struct once_flag {
+    pthread_once_t once_ = PTHREAD_ONCE_INIT;
+};
+
+template <class Callable>
+inline void call_once(once_flag& flag, Callable&& fun) {
+    pthread_once(&(flag.once_), fun);
 }
 
 
-}  // namespace
+#else
+
+
+using std::call_once;
+using std::lock_guard;
+using std::once_flag;
+using std::recursive_mutex;
+
+
+#endif
+
+
+}  // namespace util
+
+
+static util::recursive_mutex MUTEX;
 
 
 template <class T>
@@ -276,7 +292,8 @@ static const char* get_key(const std::string& name, grib_handle* h) {
     };
 
     static const std::initializer_list<P> mappings{
-        {"west_east_increment", "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
+        {"west_east_increment",
+         "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
          is("gridType", "regular_ll")},
         {"west_east_increment", "iDirectionIncrementInDegrees"},
         {"south_north_increment", "jDirectionIncrementInDegrees"},
@@ -325,7 +342,8 @@ static const char* get_key(const std::string& name, grib_handle* h) {
         {"gridded_regular_ll", "Ni", _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
         {"gridded_named", "gridName"},
 
-        {"grid", "gridName",
+        {"grid",
+         "gridName",
          _or(_or(_or(_or(is("gridType", "regular_gg"), is("gridType", "reduced_gg")), is("gridType", "rotated_gg")),
                  is("gridType", "reduced_rotated_gg")),
              is("gridType", "unstructured_grid"))},
@@ -361,7 +379,8 @@ template <typename T>
 struct ProcessingT {
     using fun_t = std::function<bool(grib_handle*, T&)>;
     fun_t fun_;
-    ProcessingT(fun_t&& fun) : fun_(fun) {}
+    ProcessingT(fun_t&& fun) :
+        fun_(fun) {}
     ~ProcessingT()                     = default;
     ProcessingT(const ProcessingT&)    = delete;
     ProcessingT(ProcessingT&&)         = delete;
@@ -369,30 +388,6 @@ struct ProcessingT {
     void operator=(ProcessingT&&)      = delete;
     bool eval(grib_handle* h, T& v) const { return fun_(h, v); }
 };
-
-
-static ProcessingT<long>* is_wind_component_uv() {
-    return new ProcessingT<long>([](grib_handle* h, long& value) {
-        long paramId = 0;
-        GRIB_CALL(codes_get_long(h, "paramId", &paramId));
-        static const util::Wind::Defaults def;
-        long ind = paramId % 1000;
-        value    = (ind == def.u ? 1 : ind == def.v ? 2 : 0);
-        return value;
-    });
-}
-
-
-static ProcessingT<long>* is_wind_component_vod() {
-    return new ProcessingT<long>([](grib_handle* h, long& value) {
-        long paramId = 0;
-        GRIB_CALL(codes_get_long(h, "paramId", &paramId));
-        static const util::Wind::Defaults def;
-        long ind = paramId % 1000;
-        value    = (ind == def.vo ? 1 : ind == def.d ? 2 : 0);
-        return value;
-    });
-}
 
 
 static ProcessingT<double>* angular_precision() {
@@ -504,7 +499,7 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
         GRIB_CALL(codes_get_long(h, "Ni", &Ni));
         ASSERT(Ni > 0);
 
-        Lon2 = LongitudeDouble(Lon2).normalise(Lon1).value();
+        Lon2 = eckit::geo::PointLonLat::normalise_angle_to_minimum(Lon2, Lon1);
         ASSERT(Lon2 >= Lon1);
 
         // angles are within +-1/2 precision, so (Lon2 - Lon1 + we) uses factor 3*1/2
@@ -513,10 +508,11 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
         ASSERT(precision_in_degrees->eval(h, eps));
         eps *= 1.5;
 
-        auto Nid     = double(Ni);
-        double globe = LongitudeDouble::GLOBE.value();
-        if (eckit::types::is_approximately_equal(Lon2 - Lon1 + we, globe, eps)) {
-            we = globe / Nid;
+        constexpr double GLOBE = 360;
+
+        auto Nid = double(Ni);
+        if (eckit::types::is_approximately_equal(Lon2 - Lon1 + we, GLOBE, eps)) {
+            we = GLOBE / Nid;
         }
         else if (!eckit::types::is_approximately_equal(Lon1 + (Nid - 1) * we, Lon2, eps)) {
 
@@ -622,147 +618,12 @@ static bool get_value(const std::string& name, grib_handle* h, T& value, const P
 }
 
 
-GribInput::GribInput() : cache_(*this), grib_(nullptr) {}
-
-
-GribInput::~GribInput() {
-    handle(nullptr);  // Will delete handle
-}
-
-
-const param::MIRParametrisation& GribInput::parametrisation(size_t which) const {
-    ASSERT(which == 0);
-    return cache_;
-}
-
-
-data::MIRField GribInput::field() const {
-
-    // Protect the grib_handle, as eccodes may update its internals
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    ASSERT(grib_);
-
-    long localDefinitionNumber = 0;
-    if (codes_get_long(grib_, "localDefinitionNumber", &localDefinitionNumber) == CODES_SUCCESS) {
-        if (localDefinitionNumber == 4) {
-            throw exception::UserError("GribInput: GRIB localDefinitionNumber=4 ('ocean') not supported");
-        }
-    }
-
-    long earthIsOblate = 0;
-    if (GRIB_GET(codes_get_long(grib_, "earthIsOblate", &earthIsOblate))) {
-        if (earthIsOblate != 0) {
-            wrongly_encoded_grib("GribInput: only spherical earth supported (earthIsOblate != 0)");
-        }
-    }
-
-    size_t count;
-    GRIB_CALL(codes_get_size(grib_, "values", &count));
-
-    size_t size = count;
-    MIRValuesVector values(count);
-    GRIB_CALL(codes_get_double_array(grib_, "values", values.data(), &size));
-    ASSERT(count == size);
-
-    long missingValuesPresent;
-    GRIB_CALL(codes_get_long(grib_, "missingValuesPresent", &missingValuesPresent));
-
-    double missingValue;
-    GRIB_CALL(codes_get_double(grib_, "missingValue", &missingValue));
-
-    // Ensure missingValue is unique, so values are not wrongly "missing"
-    long numberOfMissingValues = 0;
-    if (codes_get_long(grib_, "numberOfMissingValues", &numberOfMissingValues) == CODES_SUCCESS &&
-        numberOfMissingValues == 0) {
-        grib_get_unique_missing_value(values, missingValue);
-    }
-
-    // If grib has a 0-containing pl array, add missing values in their place
-    if (has("pl")) {
-        size_t count_pl = 0;
-        GRIB_CALL(codes_get_size(grib_, "pl", &count_pl));
-        ASSERT(count_pl);
-
-        std::vector<long> pl(count_pl, 0);
-        size = count_pl;
-        GRIB_CALL(codes_get_long_array(grib_, "pl", pl.data(), &size));
-        ASSERT(count_pl == size);
-
-        // NOTE: this fix ties with the method get(const std::string &name, std::vector<long> &value)
-        if (std::find(pl.rbegin(), pl.rend(), 0) != pl.rend()) {
-
-            // if there are no missing values yet, set them
-            if (missingValuesPresent == 0) {
-                Log::debug() << "GribInput: introducing missing values (setting bitmap)" << std::endl;
-                missingValuesPresent = 1;
-                grib_get_unique_missing_value(values, missingValue);
-            }
-
-            // pl array: insert entries in place of zeros
-            std::vector<long> pl_fixed = pl;
-            size_t new_values          = fix_pl_array_zeros(pl_fixed);
-            ASSERT(new_values > 0);
-
-
-            // values array: copy values row by row, and when a fixed (0) entry is found, insert missing values
-            Log::debug() << "GribInput: correcting values array with " << new_values << " new missing values"
-                         << std::endl;
-
-            MIRValuesVector values_extended;
-            values_extended.reserve(count + new_values);
-
-            ASSERT(pl.size() == pl_fixed.size());
-            size_t i = 0;
-            for (auto p1 = pl.begin(), p2 = pl_fixed.begin(); p1 != pl.end(); ++p1, ++p2) {
-                if (*p1 == 0) {
-                    ASSERT(*p2 > 0);
-                    auto Ni = size_t(*p2);
-                    values_extended.insert(values_extended.end(), Ni, missingValue);
-                }
-                else {
-                    auto Ni = size_t(*p1);
-                    ASSERT(i + Ni <= count);
-
-                    values_extended.insert(values_extended.end(), &values[i], &values[i + Ni]);
-                    i += Ni;
-                }
-            }
-
-            // set the new (extended) values vector, confirm it is compatible with a returned pl array
-            ASSERT(values.size() + new_values == values_extended.size());
-            values.swap(values_extended);
-
-            ASSERT(get("pl", pl));
-            size_t pl_sum = size_t(std::accumulate(pl.begin(), pl.end(), 0L));
-            ASSERT(pl_sum == values.size());
-        }
-    }
-
-    data::MIRField field(cache_, missingValuesPresent != 0, missingValue);
-
-    long scanningMode = 0;
-    if (codes_get_long(grib_, "scanningMode", &scanningMode) == CODES_SUCCESS && scanningMode != 0) {
-        field.representation()->reorder(scanningMode, values);
-    }
-
-    field.update(values, 0);
-    field.validate();
-
-    return field;
-}
-
-
-grib_handle* GribInput::gribHandle(size_t which) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    ASSERT(which == 0);
-    return grib_;
-}
+GribInput::GribInput() :
+    eckit::Configuration(EMPTY_ROOT), cache_(*this), grib_(nullptr) {}
 
 
 bool GribInput::has(const std::string& name) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
     const auto* key = get_key(name, grib_);
@@ -772,16 +633,52 @@ bool GribInput::has(const std::string& name) const {
         return false;
     }
 
-    bool ok = codes_is_defined(grib_, key) != 0;
+    return codes_is_defined(grib_, key) != 0;
+}
 
-    // Log::debug() << "GribInput::has(" << name << ",key=" << key << ") " << (ok ? "yes" : "no") <<
-    // std::endl;
-    return ok;
+
+bool GribInput::get(const std::string& name, std::string& value) const {
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    ASSERT(grib_);
+    const auto* key = get_key(name, grib_);
+
+    ASSERT(key != nullptr);
+    if (std::strlen(key) == 0) {
+        return false;
+    }
+
+    char buffer[10240];
+    size_t size = sizeof(buffer);
+    int err     = codes_get_string(grib_, key, buffer, &size);
+
+    if (err == CODES_NOT_FOUND) {
+        static const ProcessingList<std::string> process{
+            {"packing", packing()},
+        };
+
+        return get_value(key, grib_, value, process);
+    }
+
+    if (err != 0) {
+        GRIB_ERROR(err, key);
+    }
+
+    ASSERT(size < sizeof(buffer) - 1);
+
+    if (::strcmp(buffer, "MISSING") == 0) {
+        return false;
+    }
+
+    value = buffer;
+
+
+    return true;
 }
 
 
 bool GribInput::get(const std::string& name, bool& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
     const auto* key = get_key(name, grib_);
@@ -793,20 +690,12 @@ bool GribInput::get(const std::string& name, bool& value) const {
 
     // FIXME: make sure that 'temp' is not set if CODES_MISSING_LONG
     long temp = CODES_MISSING_LONG;
-    int err   = codes_get_long(grib_, key, &temp);
-    if (err == CODES_NOT_FOUND || codes_is_missing(grib_, key, &err) != 0) {
-        return FieldParametrisation::get(name, value);
-    }
-
-    if (err != 0) {
-        // Log::debug() << "codes_get_bool(" << name << ",key=" << key << ") failed " << err <<
-        // std::endl;
+    if (int err = codes_get_long(grib_, key, &temp); err != 0) {
         GRIB_ERROR(err, key);
     }
 
     value = temp != 0;
 
-    // Log::debug() << "codes_get_bool(" << name << ",key=" << key << ") " << value << std::endl;
     return true;
 }
 
@@ -823,7 +712,7 @@ bool GribInput::get(const std::string& name, int& value) const {
 
 
 bool GribInput::get(const std::string& name, long& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
     const std::string key = get_key(name, grib_);
@@ -846,21 +735,24 @@ bool GribInput::get(const std::string& name, long& value) const {
     // FIXME: make sure that 'value' is not set if CODES_MISSING_LONG
     int err = codes_get_long(grib_, key.c_str(), &value);
     if (err == CODES_NOT_FOUND || codes_is_missing(grib_, key.c_str(), &err) != 0) {
-        static const ProcessingList<long> process{
-            {"is_wind_component_uv", is_wind_component_uv()},
-            {"is_wind_component_vod", is_wind_component_vod()},
-        };
-
-        return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
+        return false;
     }
 
     if (err != 0) {
-        Log::debug() << "codes_get_long(" << name << ",key=" << key << ") failed " << err << std::endl;
         GRIB_ERROR(err, key.c_str());
     }
 
-    // Log::debug() << "codes_get_long(" << name << ",key=" << key << ") " << value << std::endl;
     return true;
+}
+
+
+bool GribInput::get(const std::string& name, long long& value) const {
+    NOTIMP;
+}
+
+
+bool GribInput::get(const std::string& name, std::size_t& value) const {
+    NOTIMP;
 }
 
 
@@ -875,7 +767,7 @@ bool GribInput::get(const std::string& name, float& value) const {
 
 
 bool GribInput::get(const std::string& name, double& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
 
@@ -899,27 +791,24 @@ bool GribInput::get(const std::string& name, double& value) const {
              iDirectionIncrementInDegrees_fix_for_periodic_regular_grids()},
         };
 
-        return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
+        return get_value(key, grib_, value, process);
     }
 
     if (err != 0) {
-        // Log::debug() << "codes_get_double(" << name << ",key=" << key << ") failed " << err <<
-        // std::endl;
         GRIB_ERROR(err, key);
     }
 
-    // Log::debug() << "codes_get_double(" << name << ",key=" << key << ") " << value << std::endl;
     return true;
 }
 
 
-bool GribInput::get(const std::string& /*name*/, std::vector<int>& /*value*/) const {
+bool GribInput::get(const std::string& name, std::vector<int>& value) const {
     NOTIMP;
 }
 
 
 bool GribInput::get(const std::string& name, std::vector<long>& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
     const auto* key = get_key(name, grib_);
@@ -930,15 +819,7 @@ bool GribInput::get(const std::string& name, std::vector<long>& value) const {
     }
 
     size_t count = 0;
-    int err      = codes_get_size(grib_, key, &count);
-
-    if (err == CODES_NOT_FOUND) {
-        return FieldParametrisation::get(name, value);
-    }
-
-    if (err != 0) {
-        Log::debug() << "codes_get_long_array(" << name << ",key=" << key << ") failed " << err << " count=" << count
-                     << std::endl;
+    if (int err = codes_get_size(grib_, key, &count); err != 0) {
         GRIB_ERROR(err, key);
     }
 
@@ -951,18 +832,23 @@ bool GribInput::get(const std::string& name, std::vector<long>& value) const {
 
     ASSERT(!value.empty());
 
-    // Log::debug() << "codes_get_long_array(" << name << ",key=" << key << ") size=" << value.size() <<
-    // std::endl;
     if (name == "pl") {
-
-        // try locating a zero in the pl array, in which case adjust it before continuing
-        // NOTE: reverse search is more suitable for latest global reduced_ll grids
         if (std::find(value.rbegin(), value.rend(), 0) != value.rend()) {
-            fix_pl_array_zeros(value);
+            wrongly_encoded_grib("GribInput: pl array contains zeros");
         }
     }
 
     return true;
+}
+
+
+bool GribInput::get(const std::string& name, std::vector<long long>& value) const {
+    NOTIMP;
+}
+
+
+bool GribInput::get(const std::string& name, std::vector<std::size_t>& value) const {
+    NOTIMP;
 }
 
 
@@ -981,53 +867,8 @@ bool GribInput::get(const std::string& name, std::vector<float>& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::string& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    ASSERT(grib_);
-    const auto* key = get_key(name, grib_);
-
-    ASSERT(key != nullptr);
-    if (std::strlen(key) == 0) {
-        return false;
-    }
-
-    char buffer[10240];
-    size_t size = sizeof(buffer);
-    int err     = codes_get_string(grib_, key, buffer, &size);
-
-    if (err == CODES_NOT_FOUND) {
-        static const ProcessingList<std::string> process{
-            {"packing", packing()},
-        };
-
-        return get_value(key, grib_, value, process) || FieldParametrisation::get(name, value);
-    }
-
-    if (err != 0) {
-        // Log::debug() << "codes_get_string(" << name << ",key=" << key << ") failed " << err <<
-        // std::endl;
-        GRIB_ERROR(err, key);
-    }
-
-    // Log::info() << err << "  " << size << " " << name << std::endl;
-
-    ASSERT(size < sizeof(buffer) - 1);
-
-    if (::strcmp(buffer, "MISSING") == 0) {
-        return false;
-    }
-
-    value = buffer;
-
-    // Log::debug() << "codes_get_string(" << name << ",key=" << key << ") " << value << std::endl;
-
-    return true;
-}
-
-
 bool GribInput::get(const std::string& name, std::vector<double>& value) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
+    util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
     const auto* key = get_key(name, grib_);
@@ -1039,15 +880,19 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     }
 
     static const ProcessingList<std::vector<double>> process{
-        {"grid", vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
+        {"grid",
+         vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
          _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
-        {"grid", vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
+        {"grid",
+         vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
          is("gridType", "lambert_azimuthal_equal_area")},
-        {"grid", vector_double({"DxInMetres", "DyInMetres"}),
+        {"grid",
+         vector_double({"DxInMetres", "DyInMetres"}),
          _or(is("gridType", "lambert"), is("gridType", "polar_stereographic"))},
         {"grid", vector_double({"DiInMetres", "DjInMetres"}), is("gridType", "mercator")},
         {"grid", vector_double({"dx", "dy"}), is("gridType", "space_view")},
-        {"rotation", vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
+        {"rotation",
+         vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
          _or(_or(_or(is("gridType", "rotated_ll"), is("gridType", "rotated_gg")), is("gridType", "rotated_sh")),
              is("gridType", "reduced_rotated_gg"))},
     };
@@ -1059,13 +904,7 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     size_t count = 0;
     int err      = codes_get_size(grib_, key, &count);
 
-    if (err == CODES_NOT_FOUND) {
-        return FieldParametrisation::get(name, value);
-    }
-
     if (err != 0) {
-        // Log::debug() << "codes_get_double_array(" << name << ",key=" << key << ") failed " << err << "
-        // count=" << count << std::endl;
         GRIB_ERROR(err, key);
     }
 
@@ -1077,213 +916,14 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     GRIB_CALL(codes_get_double_array(grib_, key, value.data(), &size));
     ASSERT(count == size);
 
-    // Log::debug() << "codes_get_double_array(" << name << ",key=" << key << ") size=" << value.size()
-    // << std::endl;
-
     ASSERT(!value.empty());
     return true;
 }
 
 
-bool GribInput::get(const std::string& /*name*/, std::vector<std::string>& /*value*/) const {
+bool GribInput::get(const std::string& name, std::vector<std::string>& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::handle(grib_handle* h) {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    FieldParametrisation::reset();
-    cache_.reset();
-
-    codes_handle_delete(grib_);
-    grib_ = h;
-
-    if (h != nullptr) {
-        long value = 0;
-        GRIB_CALL(codes_get_long(h, "7777", &value));
-
-        // apply user-defined fixes, if any
-        static const grib::Config config(LibMir::configFile(LibMir::config_file::GRIB_INPUT), false);
-        config.find(parametrisation(0)).copyValuesTo(cache_.cache_);
-
-        return true;
-    }
-
-    return false;
-}
-
-
-void GribInput::auxilaryValues(const std::string& path, std::vector<double>& values) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    eckit::AutoStdFile f(path);
-
-    int e;
-    grib_handle* h = nullptr;
-
-    // We cannot use GribFileInput to read these files, because lat/lon files are also
-    // has grid_type = triangular_grid, and we will create a loop
-
-    try {
-        h = codes_grib_handle_new_from_file(nullptr, f, &e);
-        grib_call(e, path.c_str());
-        size_t count;
-        GRIB_CALL(codes_get_size(h, "values", &count));
-
-        size_t size = count;
-        values.resize(count);
-        GRIB_CALL(codes_get_double_array(h, "values", values.data(), &size));
-        ASSERT(count == size);
-
-        long missingValuesPresent;
-        GRIB_CALL(codes_get_long(h, "missingValuesPresent", &missingValuesPresent));
-        ASSERT(!missingValuesPresent);
-
-        codes_handle_delete(h);
-    }
-    catch (...) {
-        codes_handle_delete(h);
-        throw;
-    }
-}
-
-
-void GribInput::setAuxiliaryInformation(const util::ValueMap& map) {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    for (const auto& kv : map) {
-        if (kv.first == "latitudes") {
-            Log::debug() << "Loading auxilary file '" << kv.second << "'" << std::endl;
-            auxilaryValues(kv.second, latitudes_);
-        }
-        else if (kv.first == "longitudes") {
-            Log::debug() << "Loading auxilary file '" << kv.second << "'" << std::endl;
-            auxilaryValues(kv.second, longitudes_);
-        }
-    }
-}
-
-
-bool GribInput::only(size_t paramId) {
-    auto paramIdOnly = long(paramId);
-
-    while (next()) {
-        util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-        ASSERT(grib_);
-
-        long paramIdAsLong;
-        GRIB_CALL(codes_get_long(grib_, "paramId", &paramIdAsLong));
-
-        if (paramIdOnly == paramIdAsLong) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
-size_t GribInput::dimensions() const {
-    // This will be one probably for a long time
-    return 1;
-}
-
-
-// TODO: some caching, also next() should maybe advance the auxilary files
-void GribInput::latitudes(std::vector<double>& values) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    values.clear();
-    values.reserve(latitudes_.size());
-    std::copy(latitudes_.begin(), latitudes_.end(), std::back_inserter(values));
-}
-
-
-void GribInput::longitudes(std::vector<double>& values) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    values.clear();
-    values.reserve(longitudes_.size());
-    std::copy(longitudes_.begin(), longitudes_.end(), std::back_inserter(values));
-}
-
-
-void GribInput::marsRequest(std::ostream& out) const {
-    util::lock_guard<util::recursive_mutex> lock(mutex_);
-
-    ASSERT(grib_);
-
-    static std::string gribToRequestNamespace = eckit::Resource<std::string>("gribToRequestNamespace", "mars");
-
-    auto* keys = codes_keys_iterator_new(grib_, CODES_KEYS_ITERATOR_ALL_KEYS, gribToRequestNamespace.c_str());
-    ASSERT(keys);
-
-    try {
-        const char* sep = "";
-        while (codes_keys_iterator_next(keys) != 0) {
-
-            char value[1024];
-            size_t size = sizeof(value);
-            out << sep << codes_keys_iterator_get_name(keys);
-            GRIB_CALL(codes_keys_iterator_get_string(keys, value, &size));
-            out << "=" << value;
-            sep = ",";
-        }
-        codes_keys_iterator_delete(keys);
-        keys = nullptr;
-
-        size_t size = 0;
-        int err     = codes_get_size(grib_, "freeFormData", &size);
-
-        if (err == 0) {
-            eckit::Buffer buffer(size);
-            char* b = buffer;
-
-            GRIB_CALL(codes_get_bytes(grib_, "freeFormData", (unsigned char*)b, &size));
-            ASSERT(size == buffer.size());
-
-            eckit::MemoryHandle h(buffer);
-            eckit::HandleStream in(h);
-            int n;
-            in >> n;  // Number of requests
-            ASSERT(n == 1);
-            std::string verb;
-            in >> verb;
-
-            in >> n;
-            for (int i = 0; i < n; i++) {
-                std::string param;
-                in >> param;
-                out << sep << param;
-                sep               = ",";
-                const char* slash = "=";
-                int m;
-                in >> m;
-                for (int j = 0; j < m; j++) {
-                    std::string value;
-                    in >> value;
-                    out << slash << value;
-                    slash = "/";
-                }
-            }
-
-            NOTIMP;
-        }
-
-
-        if (err != CODES_NOT_FOUND) {
-            grib_call(err, "freeFormData");
-        }
-    }
-    catch (...) {
-        if (keys != nullptr) {
-            codes_keys_iterator_delete(keys);
-        }
-        throw;
-    }
-}
-
-
-}  // namespace mir::input
+}  // namespace eccodes::geo
