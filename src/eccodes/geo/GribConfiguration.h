@@ -26,12 +26,10 @@ namespace eccodes::geo {
 
 class GribConfiguration : public eckit::Configuration {
 public:
-    GribConfiguration();
+    explicit GribConfiguration(codes_handle*);
 
 private:
     // -- Methods
-
-    grib_handle* gribHandle(size_t which = 0) const;
 
     bool has(const std::string& name) const override;
 
@@ -54,7 +52,7 @@ private:
     // -- Members
 
     eckit::CachedConfiguration cache_;
-    grib_handle* grib_;
+    codes_handle* handle_;
 };
 
 
