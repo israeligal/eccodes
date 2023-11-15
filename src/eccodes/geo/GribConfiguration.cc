@@ -10,7 +10,7 @@
  */
 
 
-#include "eccodes/geo/GribInput.h"
+#include "eccodes/geo/GribConfiguration.h"
 
 #include <algorithm>
 #include <cstring>
@@ -87,16 +87,16 @@ class ConditionT : public Condition {
     bool eval(grib_handle* /*unused*/) const override;
 
 public:
-    ConditionT(const char* key, const T& value) :
-        key_(key), value_(value) {}
+    ConditionT(const char* key, const T& value) : key_(key), value_(value) {}
 };
 
 
 template <>
 bool ConditionT<long>::eval(grib_handle* h) const {
-    long value;
-    ASSERT(h);
-    int err = codes_get_long(h, key_, &value);
+    ASSERT(h != nullptr);
+
+    long value = 0;
+    int err    = codes_get_long(h, key_, &value);
 
     if (err == CODES_NOT_FOUND) {
         return false;
@@ -112,9 +112,10 @@ bool ConditionT<long>::eval(grib_handle* h) const {
 
 template <>
 bool ConditionT<double>::eval(grib_handle* h) const {
-    double value;
-    ASSERT(h);
-    int err = codes_get_double(h, key_, &value);
+    ASSERT(h != nullptr);
+
+    double value = 0;
+    int err      = codes_get_double(h, key_, &value);
 
     if (err == CODES_NOT_FOUND) {
         return false;
@@ -130,10 +131,11 @@ bool ConditionT<double>::eval(grib_handle* h) const {
 
 template <>
 bool ConditionT<std::string>::eval(grib_handle* h) const {
+    ASSERT(h != nullptr);
+
     char buffer[10240];
     size_t size = sizeof(buffer);
-    ASSERT(h);
-    int err = codes_get_string(h, key_, buffer, &size);
+    int err     = codes_get_string(h, key_, buffer, &size);
 
     if (err == CODES_NOT_FOUND) {
         return false;
@@ -157,8 +159,7 @@ class ConditionOR : public Condition {
     }
 
 public:
-    ConditionOR(const Condition* left, const Condition* right) :
-        left_(left), right_(right) {}
+    ConditionOR(const Condition* left, const Condition* right) : left_(left), right_(right) {}
 
     ConditionOR(const ConditionOR&)            = delete;
     ConditionOR(ConditionOR&&)                 = delete;
@@ -292,8 +293,7 @@ static const char* get_key(const std::string& name, grib_handle* h) {
     };
 
     static const std::initializer_list<P> mappings{
-        {"west_east_increment",
-         "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
+        {"west_east_increment", "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
          is("gridType", "regular_ll")},
         {"west_east_increment", "iDirectionIncrementInDegrees"},
         {"south_north_increment", "jDirectionIncrementInDegrees"},
@@ -342,8 +342,7 @@ static const char* get_key(const std::string& name, grib_handle* h) {
         {"gridded_regular_ll", "Ni", _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
         {"gridded_named", "gridName"},
 
-        {"grid",
-         "gridName",
+        {"grid", "gridName",
          _or(_or(_or(_or(is("gridType", "regular_gg"), is("gridType", "reduced_gg")), is("gridType", "rotated_gg")),
                  is("gridType", "reduced_rotated_gg")),
              is("gridType", "unstructured_grid"))},
@@ -379,8 +378,7 @@ template <typename T>
 struct ProcessingT {
     using fun_t = std::function<bool(grib_handle*, T&)>;
     fun_t fun_;
-    ProcessingT(fun_t&& fun) :
-        fun_(fun) {}
+    explicit ProcessingT(fun_t&& fun) : fun_(fun) {}
     ~ProcessingT()                     = default;
     ProcessingT(const ProcessingT&)    = delete;
     ProcessingT(ProcessingT&&)         = delete;
@@ -407,7 +405,7 @@ static ProcessingT<double>* angular_precision() {
         long angleSubdivisions = 0;
         GRIB_CALL(codes_get_long(h, "angleSubdivisions", &angleSubdivisions));
 
-        value = angleSubdivisions > 0 ? 1. / double(angleSubdivisions) : 0.;
+        value = angleSubdivisions > 0 ? 1. / static_cast<double>(angleSubdivisions) : 0.;
         return true;
     });
 }
@@ -429,7 +427,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                 // if sum equals values size the grid must be global
                 size_t plSize = 0;
                 GRIB_CALL(codes_get_size(h, "pl", &plSize));
-                ASSERT(plSize);
+                ASSERT(plSize > 0);
 
                 std::vector<long> pl(plSize, 0);
                 size_t plSizeAsRead = plSize;
@@ -446,10 +444,10 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                 }
                 ASSERT(plMax > 0);
 
-                size_t valuesSize;
+                size_t valuesSize = 0;
                 GRIB_CALL(codes_get_size(h, "values", &valuesSize));
 
-                if (size_t(plSum) == valuesSize) {
+                if (static_cast<size_t>(plSum) == valuesSize) {
 
                     double eps = 0.;
                     std::unique_ptr<ProcessingT<double>> precision_in_degrees(angular_precision());
@@ -467,7 +465,7 @@ static ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_red
                              << Lon2
                              << "\n"
                                 "expected: "
-                             << double(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
+                             << static_cast<double>(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
 
                         wrongly_encoded_grib(msgs.str());
 
@@ -510,7 +508,7 @@ static ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regula
 
         constexpr double GLOBE = 360;
 
-        auto Nid = double(Ni);
+        auto Nid = static_cast<double>(Ni);
         if (eckit::types::is_approximately_equal(Lon2 - Lon1 + we, GLOBE, eps)) {
             we = GLOBE / Nid;
         }
@@ -618,11 +616,10 @@ static bool get_value(const std::string& name, grib_handle* h, T& value, const P
 }
 
 
-GribInput::GribInput() :
-    eckit::Configuration(EMPTY_ROOT), cache_(*this), grib_(nullptr) {}
+GribConfiguration::GribConfiguration() : eckit::Configuration(EMPTY_ROOT), cache_(*this), grib_(nullptr) {}
 
 
-bool GribInput::has(const std::string& name) const {
+bool GribConfiguration::has(const std::string& name) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -637,7 +634,7 @@ bool GribInput::has(const std::string& name) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::string& value) const {
+bool GribConfiguration::get(const std::string& name, std::string& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -677,7 +674,7 @@ bool GribInput::get(const std::string& name, std::string& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, bool& value) const {
+bool GribConfiguration::get(const std::string& name, bool& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -700,18 +697,18 @@ bool GribInput::get(const std::string& name, bool& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, int& value) const {
-    long v;
+bool GribConfiguration::get(const std::string& name, int& value) const {
+    long v = 0;
     if (get(name, v)) {
-        ASSERT(long(int(v)) == v);
-        value = int(v);
+        ASSERT(static_cast<long>(static_cast<int>(v)) == v);
+        value = static_cast<int>(v);
         return true;
     }
     return false;
 }
 
 
-bool GribInput::get(const std::string& name, long& value) const {
+bool GribConfiguration::get(const std::string& name, long& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -746,27 +743,27 @@ bool GribInput::get(const std::string& name, long& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, long long& value) const {
+bool GribConfiguration::get(const std::string& name, long long& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::get(const std::string& name, std::size_t& value) const {
+bool GribConfiguration::get(const std::string& name, std::size_t& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::get(const std::string& name, float& value) const {
-    double v;
+bool GribConfiguration::get(const std::string& name, float& value) const {
+    double v = 0;
     if (get(name, v)) {
-        value = float(v);
+        value = static_cast<float>(v);
         return true;
     }
     return false;
 }
 
 
-bool GribInput::get(const std::string& name, double& value) const {
+bool GribConfiguration::get(const std::string& name, double& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -802,12 +799,12 @@ bool GribInput::get(const std::string& name, double& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<int>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<int>& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<long>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<long>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -842,24 +839,24 @@ bool GribInput::get(const std::string& name, std::vector<long>& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<long long>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<long long>& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<std::size_t>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<std::size_t>& value) const {
     NOTIMP;
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<float>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<float>& value) const {
     std::vector<double> v;
     if (get(name, v)) {
         value.clear();
         value.reserve(v.size());
         for (const double& l : v) {
             ASSERT(l >= 0);
-            value.push_back(float(l));
+            value.push_back(static_cast<float>(l));
         }
         return true;
     }
@@ -867,7 +864,7 @@ bool GribInput::get(const std::string& name, std::vector<float>& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<double>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<double>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     ASSERT(grib_);
@@ -880,19 +877,15 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
     }
 
     static const ProcessingList<std::vector<double>> process{
-        {"grid",
-         vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
+        {"grid", vector_double({"iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees"}),
          _or(is("gridType", "regular_ll"), is("gridType", "rotated_ll"))},
-        {"grid",
-         vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
+        {"grid", vector_double({"xDirectionGridLengthInMetres", "yDirectionGridLengthInMetres"}),
          is("gridType", "lambert_azimuthal_equal_area")},
-        {"grid",
-         vector_double({"DxInMetres", "DyInMetres"}),
+        {"grid", vector_double({"DxInMetres", "DyInMetres"}),
          _or(is("gridType", "lambert"), is("gridType", "polar_stereographic"))},
         {"grid", vector_double({"DiInMetres", "DjInMetres"}), is("gridType", "mercator")},
         {"grid", vector_double({"dx", "dy"}), is("gridType", "space_view")},
-        {"rotation",
-         vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
+        {"rotation", vector_double({"latitudeOfSouthernPoleInDegrees", "longitudeOfSouthernPoleInDegrees"}),
          _or(_or(_or(is("gridType", "rotated_ll"), is("gridType", "rotated_gg")), is("gridType", "rotated_sh")),
              is("gridType", "reduced_rotated_gg"))},
     };
@@ -921,7 +914,7 @@ bool GribInput::get(const std::string& name, std::vector<double>& value) const {
 }
 
 
-bool GribInput::get(const std::string& name, std::vector<std::string>& value) const {
+bool GribConfiguration::get(const std::string& name, std::vector<std::string>& value) const {
     NOTIMP;
 }
 

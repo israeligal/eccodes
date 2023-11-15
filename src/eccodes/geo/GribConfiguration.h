@@ -24,9 +24,9 @@
 namespace eccodes::geo {
 
 
-class GribInput : public eckit::Configuration {
+class GribConfiguration : public eckit::Configuration {
 public:
-    GribInput();
+    GribConfiguration();
 
 private:
     // -- Methods
