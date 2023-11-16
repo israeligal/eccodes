@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "eckit/config/CachedConfiguration.h"
+#include "eckit/config/MappedConfiguration.h"
 #include "eckit/config/Configuration.h"
 
 
@@ -56,7 +56,7 @@ private:
 
     // -- Members
 
-    eckit::CachedConfiguration cache_;
+    mutable eckit::MappedConfiguration cache_;
     codes_handle* handle_;
 };
 

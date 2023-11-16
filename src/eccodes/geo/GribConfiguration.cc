@@ -603,13 +603,17 @@ using std::recursive_mutex;
 static util::recursive_mutex MUTEX;
 
 
-GribConfiguration::GribConfiguration(codes_handle* h) : eckit::Configuration(EMPTY_ROOT), cache_(*this), handle_(h) {
+GribConfiguration::GribConfiguration(codes_handle* h) : eckit::Configuration(EMPTY_ROOT), handle_(h) {
     ASSERT(handle_ != nullptr);
 }
 
 
 bool GribConfiguration::has(const std::string& name) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.has(name)) {
+        return true;
+    }
 
     const auto* key = get_key(name, handle_);
 
@@ -624,6 +628,10 @@ bool GribConfiguration::has(const std::string& name) const {
 
 bool GribConfiguration::get(const std::string& name, std::string& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.get(name, value)) {
+        return true;
+    }
 
     const auto* key = get_key(name, handle_);
 
@@ -652,13 +660,17 @@ bool GribConfiguration::get(const std::string& name, std::string& value) const {
         return false;
     }
 
-    value = buffer;
+    cache_.set(name, value = buffer);
     return true;
 }
 
 
 bool GribConfiguration::get(const std::string& name, bool& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.get(name, value)) {
+        return true;
+    }
 
     const auto* key = get_key(name, handle_);
 
@@ -672,7 +684,7 @@ bool GribConfiguration::get(const std::string& name, bool& value) const {
     int err   = codes_get_long(handle_, key, &temp);
     CHECK_ERROR(err, key);
 
-    value = temp != 0;
+    cache_.set(name, value = temp != 0);
     return true;
 }
 
@@ -691,21 +703,13 @@ bool GribConfiguration::get(const std::string& name, int& value) const {
 bool GribConfiguration::get(const std::string& name, long& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
+    if (cache_.get(name, value)) {
+        return true;
+    }
+
     const std::string key = get_key(name, handle_);
     if (key.empty()) {
         return false;
-    }
-
-    std::string packing;
-    if (key == "bitsPerValue" && get("packing", packing) && packing == "ieee") {
-        // GRIB2 Section 5 Code Table 7
-        // NOTE:
-        // - has to be done here as GRIBs packingType=grid_ieee ignores bitsPerValue (usually 0?)
-        // - packingType=grid_ieee has "precision", but "spectral_ieee" doesn't
-        long precision = 0;
-        codes_get_long(handle_, "precision", &precision);
-        value = precision == 1 ? 32 : precision == 2 ? 64 : precision == 3 ? 128 : 0;
-        return value != 0;
     }
 
     // FIXME: make sure that 'value' is not set if CODES_MISSING_LONG
@@ -716,6 +720,7 @@ bool GribConfiguration::get(const std::string& name, long& value) const {
 
     CHECK_ERROR(err, key.c_str());
 
+    cache_.set(name, value);
     return true;
 }
 
@@ -731,8 +736,12 @@ bool GribConfiguration::get(const std::string& /*name*/, std::size_t& /*value*/)
 
 
 bool GribConfiguration::get(const std::string& name, float& value) const {
+    if (cache_.get(name, value)) {
+        return true;
+    }
+
     if (double v = 0; get(name, v)) {
-        value = static_cast<float>(v);
+        cache_.set(name, value = static_cast<float>(v));
         return true;
     }
 
@@ -742,6 +751,10 @@ bool GribConfiguration::get(const std::string& name, float& value) const {
 
 bool GribConfiguration::get(const std::string& name, double& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.get(name, value)) {
+        return true;
+    }
 
     ASSERT(name != "grid");
 
@@ -763,11 +776,17 @@ bool GribConfiguration::get(const std::string& name, double& value) const {
              iDirectionIncrementInDegrees_fix_for_periodic_regular_grids()},
         };
 
-        return get_value(key, handle_, value, process);
+        if (get_value(key, handle_, value, process)) {
+            cache_.set(name, value);
+            return true;
+        }
+
+        return false;
     }
 
     CHECK_ERROR(err, key);
 
+    cache_.set(name, value);
     return true;
 }
 
@@ -779,6 +798,10 @@ bool GribConfiguration::get(const std::string& /*name*/, std::vector<int>& /*val
 
 bool GribConfiguration::get(const std::string& name, std::vector<long>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.get(name, value)) {
+        return true;
+    }
 
     const auto* key = get_key(name, handle_);
 
@@ -806,6 +829,7 @@ bool GribConfiguration::get(const std::string& name, std::vector<long>& value) c
         }
     }
 
+    cache_.set(name, value);
     return true;
 }
 
@@ -821,22 +845,31 @@ bool GribConfiguration::get(const std::string& /*name*/, std::vector<std::size_t
 
 
 bool GribConfiguration::get(const std::string& name, std::vector<float>& value) const {
-    std::vector<double> v;
-    if (get(name, v)) {
-        value.clear();
-        value.reserve(v.size());
-        for (const double& l : v) {
-            ASSERT(l >= 0);
-            value.push_back(static_cast<float>(l));
-        }
+    if (cache_.get(name, value)) {
         return true;
     }
+
+    if (std::vector<double> v; get(name, v)) {
+        value.clear();
+        value.reserve(v.size());
+        for (const auto& d : v) {
+            value.push_back(static_cast<float>(d));
+        }
+
+        cache_.set(name, value);
+        return true;
+    }
+
     return false;
 }
 
 
 bool GribConfiguration::get(const std::string& name, std::vector<double>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
+
+    if (cache_.get(name, value)) {
+        return true;
+    }
 
     const auto* key = get_key(name, handle_);
 
@@ -861,7 +894,13 @@ bool GribConfiguration::get(const std::string& name, std::vector<double>& value)
     };
 
     if (get_value(key, handle_, value, process)) {
+        cache_.set(name, value);
         return true;
+    }
+
+    // FIXME make logic consistent for ::get(,*)
+    if (codes_is_defined(handle_, key) == 0) {
+        return false;
     }
 
     size_t count = 0;
@@ -877,6 +916,8 @@ bool GribConfiguration::get(const std::string& name, std::vector<double>& value)
     ASSERT(count == size);
 
     ASSERT(!value.empty());
+
+    cache_.set(name, value);
     return true;
 }
 
