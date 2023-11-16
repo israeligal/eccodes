@@ -24,7 +24,10 @@
 namespace eccodes::geo {
 
 
-class GribConfiguration : public eckit::Configuration {
+bool codes_check_error(int e, const char* call);
+
+
+class GribConfiguration final : public eckit::Configuration {
 public:
     explicit GribConfiguration(codes_handle*);
 
@@ -48,6 +51,8 @@ private:
     bool get(const std::string& name, std::vector<float>& value) const override;
     bool get(const std::string& name, std::vector<double>& value) const override;
     bool get(const std::string& name, std::vector<std::string>& value) const override;
+
+    void print(std::ostream&) const override;
 
     // -- Members
 

@@ -17,6 +17,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <ostream>
 #include <sstream>
 
 #define ECKIT_THREADS
@@ -37,15 +38,7 @@
 namespace eccodes::geo {
 
 
-namespace {
-
-
-using eckit::Log;
-
-const eckit::Value EMPTY_ROOT;
-
-
-inline bool check(int e, const char* call) {
+bool codes_check_error(int e, const char* call) {
     if (e != CODES_SUCCESS) {
         std::ostringstream os;
         os << call << ": " << codes_get_error_message(e);
@@ -55,8 +48,16 @@ inline bool check(int e, const char* call) {
 }
 
 
-#define CHECK_ERROR(a, b) check(a, b)
-#define CHECK_CALL(a) check(a, #a)
+#define CHECK_ERROR(a, b) codes_check_error(a, b)
+#define CHECK_CALL(a) codes_check_error(a, #a)
+
+
+namespace {
+
+
+using eckit::Log;
+
+const eckit::Value EMPTY_ROOT;
 
 
 class Condition {
@@ -235,6 +236,8 @@ const char* get_key(const std::string& name, codes_handle* h) {
     };
 
     static const std::initializer_list<P> mappings{
+        {"type", "gridType"},
+
         {"west_east_increment", "iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
          is("gridType", "regular_ll")},
         {"west_east_increment", "iDirectionIncrementInDegrees"},
@@ -517,7 +520,7 @@ ProcessingT<std::string>* packing() {
         };
 
         auto packingType = get(h, "packingType");
-        for (auto& prefix : std::vector<std::string>{"grid_", "spectral_"}) {
+        for (const auto& prefix : std::vector<std::string>{"grid_", "spectral_"}) {
             if (packingType.find(prefix) == 0) {
                 value = packingType.substr(prefix.size());
                 std::replace(value.begin(), value.end(), '_', '-');
@@ -717,13 +720,13 @@ bool GribConfiguration::get(const std::string& name, long& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, long long& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, long long& /*value*/) const {
+    return false;
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::size_t& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, std::size_t& /*value*/) const {
+    return false;
 }
 
 
@@ -769,8 +772,8 @@ bool GribConfiguration::get(const std::string& name, double& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<int>& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, std::vector<int>& /*value*/) const {
+    return false;
 }
 
 
@@ -807,13 +810,13 @@ bool GribConfiguration::get(const std::string& name, std::vector<long>& value) c
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<long long>& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, std::vector<long long>& /*value*/) const {
+    return false;
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<std::size_t>& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, std::vector<std::size_t>& /*value*/) const {
+    return false;
 }
 
 
@@ -878,9 +881,18 @@ bool GribConfiguration::get(const std::string& name, std::vector<double>& value)
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<std::string>& value) const {
-    NOTIMP;
+bool GribConfiguration::get(const std::string& /*name*/, std::vector<std::string>& /*value*/) const {
+    return false;
 }
+
+
+void GribConfiguration::print(std::ostream& out) const {
+    out << "{}";
+}
+
+
+#undef CHECK_ERROR
+#undef CHECK_CALL
 
 
 }  // namespace eccodes::geo

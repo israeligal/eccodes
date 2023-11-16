@@ -11,15 +11,15 @@
 
 
 #include <cstring>
-#include <sstream>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "eccodes.h"
+#include "eccodes/geo/GribConfiguration.h"
 
-#include "eckit/exception/Exceptions.h"
 #include "eckit/filesystem/PathName.h"
-#include "eckit/io/Buffer.h"
+#include "eckit/geo/Grid.h"
 #include "eckit/io/BufferedHandle.h"
 #include "eckit/io/DataHandle.h"
 #include "eckit/io/StdFile.h"
@@ -27,23 +27,19 @@
 #include "eckit/option/CmdArgs.h"
 #include "eckit/option/SimpleOption.h"
 #include "eckit/runtime/Tool.h"
-#include "eckit/value/Value.h"
 
 
 namespace eccodes::tools {
 
 
-auto& LOG = eckit::Log::info();
-auto& ERR = eckit::Log::error();
-
-using coord_t  = std::vector<double>;
-using values_t = std::vector<double>;
-using prec_t   = decltype(LOG.precision());
+auto& LOG    = eckit::Log::info();
+auto& ERR    = eckit::Log::error();
+using prec_t = decltype(LOG.precision());
 
 
 struct Field {
     size_t dimensions() const { return 0; }
-    values_t values(size_t) const { return {}; }
+    std::vector<double> values(size_t) const { return {}; }
 };
 
 
@@ -85,21 +81,6 @@ public:
 };
 
 
-bool codes_check_(int e, const char* call, bool missingOK = false) {
-    if (static_cast<bool>(e)) {
-        if (missingOK && (e == CODES_NOT_FOUND)) {
-            return false;
-        }
-
-        std::ostringstream os;
-        os << call << ": " << codes_get_error_message(e);
-        throw eckit::SeriousBug(os.str());
-    }
-
-    return true;
-}
-
-
 void GribGetData::run() {
     eckit::option::CmdArgs args(&usage, options_, numberOfPositionalArguments(), minimumPositionalArguments());
 
@@ -131,7 +112,7 @@ void GribGetData::run() {
                 break;
             }
 
-            codes_check_(e, "wmo_read_any_from_file");
+            geo::codes_check_error(e, "wmo_read_any_from_file");
             ASSERT(e == CODES_SUCCESS);
 
             // eccodes latitude/longitude
@@ -139,24 +120,33 @@ void GribGetData::run() {
             auto* h = codes_handle_new_from_message(nullptr, buffer, len);
             ASSERT(h != nullptr);
 
-            long N = 0;
-            CODES_CHECK(codes_get_long(h, "numberOfDataPoints", &N), "codes_get_long");
+            geo::GribConfiguration config(h);
+
+            long N = config.getLong("numberOfDataPoints");
             ASSERT(0 < N);
 
-            LOG << N << std::endl;
+            if (geo) {
+                std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));
+                auto [lats, lons] = grid->to_latlon();
+                ASSERT(lats.size() == lons.size());
+
+                for (auto lat = lats.begin(), lon = lons.begin(); lat != lats.end(); ++lat, ++lon) {
+                    LOG << 't' << *lat << 't' << *lon << 't' << std::endl;
+                }
+            }
 
             if (ecc) {
-                coord_t lats_ecc;
-                coord_t lons_ecc;
-                lats_ecc.reserve(N);
-                lons_ecc.reserve(N);
+                std::vector<double> lats;
+                std::vector<double> lons;
+                lats.reserve(N);
+                lons.reserve(N);
 
                 auto* it = codes_grib_iterator_new(h, 0, &e);
                 CODES_CHECK(e, nullptr);
 
                 for (double lat = 0, lon = 0, value = 0; codes_grib_iterator_next(it, &lat, &lon, &value) != 0;) {
-                    lats_ecc.push_back(lat);
-                    lons_ecc.push_back(lon);
+                    lats.push_back(lat);
+                    lons.push_back(lon);
                 }
 
                 codes_grib_iterator_delete(it);
