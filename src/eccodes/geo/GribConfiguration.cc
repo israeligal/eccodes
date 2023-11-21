@@ -404,7 +404,7 @@ ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_gr
 
                         std::ostringstream msgs;
                         msgs.precision(32);
-                        msgs << "GribInput: wrongly encoded longitudeOfLastGridPointInDegrees:"
+                        msgs << "GribConfiguration: wrongly encoded longitudeOfLastGridPointInDegrees:"
                              << "\n"
                                 "encoded:  "
                              << Lon2
@@ -462,7 +462,7 @@ ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids
             // TODO refactor, not really specific to "periodic regular grids", but useful
             std::ostringstream msgs;
             msgs.precision(32);
-            msgs << "GribInput: wrongly encoded iDirectionIncrementInDegrees:"
+            msgs << "GribConfiguration: wrongly encoded iDirectionIncrementInDegrees:"
                     "\n"
                     "encoded: "
                  << we
@@ -825,7 +825,7 @@ bool GribConfiguration::get(const std::string& name, std::vector<long>& value) c
 
     if (name == "pl") {
         if (std::find(value.rbegin(), value.rend(), 0) != value.rend()) {
-            wrongly_encoded_grib("GribInput: pl array contains zeros");
+            wrongly_encoded_grib("GribConfiguration: pl array contains zeros");
         }
     }
 

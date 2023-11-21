@@ -17,8 +17,8 @@
 #include <string>
 #include <vector>
 
-#include "eckit/config/MappedConfiguration.h"
 #include "eckit/config/Configuration.h"
+#include "eckit/config/MappedConfiguration.h"
 
 
 namespace eccodes::geo {
