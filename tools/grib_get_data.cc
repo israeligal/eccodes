@@ -8,6 +8,8 @@
  * virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
  */
 
+#include <vector>
+
 #include "grib_tools.h"
 
 static void print_key_values(grib_values* values, int values_count);
@@ -15,102 +17,97 @@ static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h
 
 grib_option grib_options[] = {
     /*  {id, args, help}, on, command_line, value */
-    { "S", 0, 0, 1, 0, 0 },
-    { "M", 0, 0, 0, 1, 0 },
-    { "m:", "missingValue",
-      "\n\t\tThe missing value is given through this option."
-      "\n\t\tAny string is allowed and it is printed in place of the missing"
-      "\n\t\tvalues. Default is to skip the missing values.\n",
-      0, 1, 0 },
-    { "p:", 0, 0, 0, 1, 0 },
-    { "F:", "format", "\n\t\tC style format for data values. Default is \"%.10e\"\n", 0, 1, 0 },
-    { "L:", "format", "\n\t\tC style format for latitudes/longitudes. Default is \"%9.3f%9.3f\"\n", 0, 1, 0 },
-    { "w:", 0, 0, 0, 1, 0 },
-    { "s:", 0, 0, 0, 1, 0 },
-    { "f", 0, 0, 0, 1, 0 },
-    { "G", 0, 0, 0, 1, 0 },
-    { "7", 0, 0, 0, 1, 0 },
-    { "X:", 0, 0, 0, 1, 0 },
-    { "V", 0, 0, 0, 1, 0 },
-    { "h", 0, 0, 0, 1, 0 },
+    {"S", nullptr, nullptr, 1, 0, nullptr},
+    {"M", nullptr, nullptr, 0, 1, nullptr},
+    {"m:", "missingValue",
+     "\n\t\tThe missing value is given through this option."
+     "\n\t\tAny string is allowed and it is printed in place of the missing"
+     "\n\t\tvalues. Default is to skip the missing values.\n",
+     0, 1, nullptr},
+    {"p:", nullptr, nullptr, 0, 1, nullptr},
+    {"F:", "format", "\n\t\tC style format for data values. Default is \"%.10e\"\n", 0, 1, nullptr},
+    {"L:", "format", "\n\t\tC style format for latitudes/longitudes. Default is \"%9.3f%9.3f\"\n", 0, 1, nullptr},
+    {"w:", nullptr, nullptr, 0, 1, nullptr},
+    {"s:", nullptr, nullptr, 0, 1, nullptr},
+    {"f", nullptr, nullptr, 0, 1, nullptr},
+    {"G", nullptr, nullptr, 0, 1, nullptr},
+    {"7", nullptr, nullptr, 0, 1, nullptr},
+    {"X:", nullptr, nullptr, 0, 1, nullptr},
+    {"V", nullptr, nullptr, 0, 1, nullptr},
+    {"h", nullptr, nullptr, 0, 1, nullptr},
 };
 
 const char* tool_description =
     "Print a latitude, longitude, data values list.\n"
     "\tNote: Rotated grids are first unrotated";
-const char* tool_name  = "grib_get_data";
+const char* tool_name       = "grib_get_data";
 const char* tool_online_doc = "https://confluence.ecmwf.int/display/ECC/grib_get_data";
-const char* tool_usage = "[options] grib_file grib_file ...";
-
-extern FILE* dump_file;
+const char* tool_usage      = "[options] grib_file grib_file ...";
 
 int grib_options_count = sizeof(grib_options) / sizeof(grib_option);
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     return grib_tool(argc, argv);
 }
 
-int grib_tool_before_getopt(grib_runtime_options* options)
-{
+int grib_tool_before_getopt(grib_runtime_options* options) {
     return 0;
 }
 
-int grib_tool_init(grib_runtime_options* options)
-{
+int grib_tool_init(grib_runtime_options* options) {
     return 0;
 }
 
-int grib_tool_new_filename_action(grib_runtime_options* options, const char* file)
-{
+int grib_tool_new_filename_action(grib_runtime_options* options, const char* file) {
     return 0;
 }
 
-int grib_tool_new_file_action(grib_runtime_options* options, grib_tools_file* file)
-{
+int grib_tool_new_file_action(grib_runtime_options* options, grib_tools_file* file) {
     exit_if_input_is_directory(tool_name, file->name);
     return 0;
 }
 
-int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h)
-{
+int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h) {
     int err = 0;
 
-    double missingValue     = 9999;
-    int skip_missing        = 1;
-    char* missing_string    = NULL;
-    int i                   = 0;
-    grib_values* values     = NULL;
-    grib_iterator* iter     = NULL;
-    char format_values[32]  = {0,};
-    char format_latlons[32] = {0,};
+    double missingValue    = 9999;
+    int skip_missing       = 1;
+    char* missing_string   = nullptr;
+    int i                  = 0;
+    grib_values* values    = nullptr;
+    grib_iterator* iter    = nullptr;
+    char format_values[32] = {
+        0,
+    };
+    char format_latlons[32] = {
+        0,
+    };
     const char* default_format_values  = "%.10e";
     const char* default_format_latlons = "%9.3f%9.3f";
-    int print_keys               = grib_options_on("p:");
-    long numberOfPoints          = 0;
-    long bitmapPresent           = 0;
-    long* bitmap                 = NULL; /* bitmap array */
-    size_t bmp_len               = 0;
-    double *data_values = 0, *lats = 0, *lons = 0;
-    size_t size = 0, num_bytes = 0;
-    long hasMissingValues = 0;
+    int print_keys                     = grib_options_on("p:");
+    long numberOfPoints                = 0;
+    size_t bmp_len                     = 0;
+    int n                              = 0;
 
-    if (!options->skip) {
-        if (options->set_values_count != 0)
+    if (options->skip == 0) {
+        if (options->set_values_count != 0) {
             err = grib_set_values(h, options->set_values, options->set_values_count);
-        if (err != GRIB_SUCCESS && options->fail)
+        }
+        if (err != GRIB_SUCCESS && options->fail != 0) {
             exit(err);
+        }
     }
 
-    if (grib_options_on("m:")) {
+    if (grib_options_on("m:") != 0) {
         /* User wants to see missing values */
-        char* theEnd = NULL;
+        char* theEnd = nullptr;
         double mval  = 0;
         char* kmiss  = grib_options_get_option("m:");
         char* p      = kmiss;
         skip_missing = 0;
-        while (*p != ':' && *p != '\0')
+        while (*p != ':' && *p != '\0') {
             p++;
+        }
         if (*p == ':' && *(p + 1) != '\0') {
             *p             = '\0';
             missing_string = strdup(p + 1);
@@ -119,13 +116,14 @@ int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h)
             missing_string = strdup(kmiss);
         }
         mval = strtod(kmiss, &theEnd);
-        if (kmiss != theEnd && *theEnd == '\0')
+        if (kmiss != theEnd && *theEnd == '\0') {
             missingValue = mval;
+        }
         grib_set_double(h, "missingValue", missingValue);
         /*missing_string=grib_options_get_option("m:");*/
     }
 
-    if (grib_options_on("F:")) {
+    if (grib_options_on("F:") != 0) {
         const char* str = grib_options_get_option("F:");
         snprintf(format_values, sizeof(format_values), "%s", str);
     }
@@ -133,17 +131,19 @@ int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h)
         snprintf(format_values, sizeof(format_values), "%s", default_format_values);
     }
 
-    if (grib_options_on("L:")) {
+    if (grib_options_on("L:") != 0) {
         /* Do a very basic sanity check */
         const char* str = grib_options_get_option("L:");
         if (string_count_char(str, '%') != 2) {
-            fprintf(stderr, "ERROR: Invalid lats/lons format option \"%s\".\n"
+            fprintf(stderr,
+                    "ERROR: Invalid lats/lons format option \"%s\".\n"
                     "       The default is: \"%s\"."
                     " For higher precision, try: \"%%12.6f%%12.6f\"\n",
                     str, default_format_latlons);
             exit(1);
         }
-        snprintf(format_latlons, sizeof(format_latlons), "%s ", str); /* Add a final space to separate from data values */
+        snprintf(format_latlons, sizeof(format_latlons), "%s ",
+                 str); /* Add a final space to separate from data values */
     }
     else {
         snprintf(format_latlons, sizeof(format_latlons), "%s ", default_format_latlons);
@@ -156,157 +156,165 @@ int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h)
 
     iter = grib_iterator_new(h, 0, &err);
 
-    num_bytes   = (numberOfPoints + 1) * sizeof(double);
-    data_values = (double*)calloc(numberOfPoints + 1, sizeof(double));
-    if (!data_values) {
-        fprintf(stderr, "ERROR: Failed to allocate %zu bytes for data values (number of points=%ld)\n",
-                num_bytes, numberOfPoints);
-        exit(GRIB_OUT_OF_MEMORY);
-    }
+    std::vector<double> data_values(numberOfPoints + 1);
+    std::vector<double> lats(numberOfPoints + 1);
+    std::vector<double> lons(numberOfPoints + 1);
 
-    if (iter) {
-        double *lat = 0, *lon = 0, *val = 0;
-        lats = (double*)calloc(numberOfPoints + 1, sizeof(double));
-        lons = (double*)calloc(numberOfPoints + 1, sizeof(double));
-        lat  = lats;
-        lon  = lons;
-        val  = data_values;
-        while (grib_iterator_next(iter, lat++, lon++, val++)) {}
+    if (iter != nullptr) {
+        lats.resize(numberOfPoints + 1);
+        lons.resize(numberOfPoints + 1);
+        for (auto *lat = lats.data(), *lon = lons.data(), *val = data_values.data();
+             grib_iterator_next(iter, lat++, lon++, val++) != 0;) {
+        }
     }
     else if (err == GRIB_NOT_IMPLEMENTED || err == GRIB_SUCCESS) {
-        size = numberOfPoints;
-        err  = grib_get_double_array(h, "values", data_values, &size);
-        if (err) {
-            grib_context_log(h->context, GRIB_LOG_ERROR, "Cannot decode values: %s",
-                             grib_get_error_message(err));
+        auto size = static_cast<size_t>(numberOfPoints);
+        err       = grib_get_double_array(h, "values", data_values.data(), &size);
+        if (err != 0) {
+            grib_context_log(h->context, GRIB_LOG_ERROR, "Cannot decode values: %s", grib_get_error_message(err));
             exit(1);
         }
-        if (size != (size_t)numberOfPoints) {
+        if (size != static_cast<size_t>(numberOfPoints)) {
             fprintf(stderr, "ERROR: Wrong number of points %ld\n", numberOfPoints);
-            if (grib_options_on("f"))
+            if (grib_options_on("f") != 0) {
                 exit(1);
+            }
         }
     }
     else {
-        grib_context_log(h->context, GRIB_LOG_ERROR,
-                         "%s", grib_get_error_message(err));
+        grib_context_log(h->context, GRIB_LOG_ERROR, "%s", grib_get_error_message(err));
         exit(err);
     }
 
     /* Cater for GRIBs which have missing values but no bitmap */
     /* See ECC-511 */
-    GRIB_CHECK(grib_get_long(h, "missingValuesPresent", &hasMissingValues), 0);
-    GRIB_CHECK(grib_get_long(h, "bitmapPresent", &bitmapPresent), 0);
-    if (bitmapPresent) {
-        GRIB_CHECK(grib_get_size(h, "bitmap", &bmp_len), 0);
-        bitmap = (long*)malloc(bmp_len * sizeof(long));
-        GRIB_CHECK(grib_get_long_array(h, "bitmap", bitmap, &bmp_len), 0);
+
+    bool hasMissingValues = false;
+    {
+        long value = 0;
+        GRIB_CHECK(grib_get_long(h, "missingValuesPresent", &value), nullptr);
+        hasMissingValues = value != 0;
     }
 
-    if (iter)
+    bool bitmapPresent = false;
+    {
+        long value = 0;
+        GRIB_CHECK(grib_get_long(h, "bitmapPresent", &value), nullptr);
+        bitmapPresent = value != 0;
+    }
+
+    std::vector<long> bitmap;
+
+    if (bitmapPresent) {
+        GRIB_CHECK(grib_get_size(h, "bitmap", &bmp_len), nullptr);
+        bitmap.resize(bmp_len);
+        GRIB_CHECK(grib_get_long_array(h, "bitmap", bitmap.data(), &bmp_len), nullptr);
+    }
+
+    if (iter != nullptr) {
         fprintf(dump_file, "Latitude Longitude ");
+    }
 
     fprintf(dump_file, "Value");
 
-    if (print_keys)
-        for (i = 0; i < options->print_keys_count; i++)
+    if (print_keys != 0) {
+        for (i = 0; i < options->print_keys_count; i++) {
             fprintf(dump_file, " %s", options->print_keys[i].name);
+        }
+    }
 
     fprintf(dump_file, "\n");
 
-    if (print_keys)
+    if (print_keys != 0) {
         values = get_key_values(options, h);
+    }
 
     if (skip_missing == 0) {
         /* Show missing values in data */
         for (i = 0; i < numberOfPoints; i++) {
-            int is_missing_val = 0;
+            bool is_missing_val = false;
             if (hasMissingValues) {
-                if (bitmapPresent)
-                    is_missing_val = (bitmap[i] == 0);
-                else
-                    is_missing_val = (data_values[i] == missingValue);
+                is_missing_val = bitmapPresent ? (bitmap[i] == 0) : (data_values[i] == missingValue);
             }
-            if (iter)
+            if (iter != nullptr) {
                 fprintf(dump_file, format_latlons, lats[i], lons[i]);
+            }
 
-            if (is_missing_val)
+            if (is_missing_val) {
                 fprintf(dump_file, "%s", missing_string);
-            else
+            }
+            else {
                 fprintf(dump_file, format_values, data_values[i]);
+            }
 
-            if (print_keys)
+            if (print_keys != 0) {
                 print_key_values(values, options->print_keys_count);
+            }
             fprintf(dump_file, "\n");
         }
     }
     else if (skip_missing == 1) {
         /* Skip the missing values in data */
         for (i = 0; i < numberOfPoints; i++) {
-            int is_missing_val = 0;
+            bool is_missing_val = false;
             if (hasMissingValues) {
-                if (bitmapPresent)
-                    is_missing_val = (bitmap[i] == 0);
-                else
-                    is_missing_val = (data_values[i] == missingValue);
+                is_missing_val = bitmapPresent ? (bitmap[i] == 0) : (data_values[i] == missingValue);
             }
             if (!is_missing_val) {
-                if (iter)
+                if (iter != nullptr) {
                     fprintf(dump_file, format_latlons, lats[i], lons[i]);
+                }
                 fprintf(dump_file, format_values, data_values[i]);
-                if (print_keys)
+                if (print_keys != 0) {
                     print_key_values(values, options->print_keys_count);
+                }
                 fprintf(dump_file, "\n");
             }
         }
     }
 
-    if (iter)
+    if (iter != nullptr) {
         grib_iterator_delete(iter);
-    if (bitmap)
-        free(bitmap);
-
-    free(data_values);
-    free(missing_string);
-    if (iter) {
-        free(lats);
-        free(lons);
     }
+
+    free(missing_string);
 
     return 0;
 }
 
-int grib_tool_skip_handle(grib_runtime_options* options, grib_handle* h)
-{
+int grib_tool_skip_handle(grib_runtime_options* options, grib_handle* h) {
     grib_handle_delete(h);
     return 0;
 }
 
-int grib_tool_finalise_action(grib_runtime_options* options)
-{
+void grib_tool_print_key_values(grib_runtime_options* options, grib_handle* h) {
+    grib_print_key_values(options, h);
+}
+
+int grib_tool_finalise_action(grib_runtime_options* options) {
     return 0;
 }
 
-static void print_key_values(grib_values* values, int values_count)
-{
+static void print_key_values(grib_values* values, int values_count) {
     int i = 0;
     for (i = 0; i < values_count; i++) {
         fprintf(dump_file, " %s", values[i].string_value);
     }
 }
 
-static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h)
-{
+static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h) {
     int i                      = 0;
     int ret                    = 0;
-    char value[MAX_STRING_LEN] = {0,};
+    char value[MAX_STRING_LEN] = {
+        0,
+    };
     const char* notfound = "not found";
 
     for (i = 0; i < options->print_keys_count; i++) {
         size_t len = MAX_STRING_LEN;
         ret        = GRIB_SUCCESS;
 
-        if (grib_is_missing(h, options->print_keys[i].name, &ret) && ret == GRIB_SUCCESS) {
+        if (grib_is_missing(h, options->print_keys[i].name, &ret) != 0 && ret == GRIB_SUCCESS) {
             options->print_keys[i].type = GRIB_TYPE_MISSING;
             snprintf(value, sizeof(value), "MISSING");
         }
@@ -320,14 +328,12 @@ static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h
                     ret = grib_get_string(h, options->print_keys[i].name, value, &len);
                     break;
                 case GRIB_TYPE_DOUBLE:
-                    ret = grib_get_double(h, options->print_keys[i].name,
-                                          &(options->print_keys[i].double_value));
+                    ret = grib_get_double(h, options->print_keys[i].name, &(options->print_keys[i].double_value));
                     snprintf(value, sizeof(value), "%g", options->print_keys[i].double_value);
                     break;
                 case GRIB_TYPE_LONG:
-                    ret = grib_get_long(h, options->print_keys[i].name,
-                                        &(options->print_keys[i].long_value));
-                    snprintf(value, sizeof(value), "%ld", (long)options->print_keys[i].long_value);
+                    ret = grib_get_long(h, options->print_keys[i].name, &(options->print_keys[i].long_value));
+                    snprintf(value, sizeof(value), "%ld", options->print_keys[i].long_value);
                     break;
                 default:
                     fprintf(dump_file, "invalid type for %s\n", options->print_keys[i].name);
@@ -336,10 +342,12 @@ static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h
         }
 
         if (ret != GRIB_SUCCESS) {
-            if (options->fail)
+            if (options->fail != 0) {
                 GRIB_CHECK_NOLINE(ret, options->print_keys[i].name);
-            if (ret == GRIB_NOT_FOUND)
+            }
+            if (ret == GRIB_NOT_FOUND) {
                 strcpy(value, notfound);
+            }
             else {
                 fprintf(dump_file, "%s %s\n", grib_get_error_message(ret), options->print_keys[i].name);
                 exit(ret);
@@ -350,8 +358,7 @@ static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h
     return options->print_keys;
 }
 
-int grib_no_handle_action(grib_runtime_options* options, int err)
-{
+int grib_no_handle_action(grib_runtime_options* options, int err) {
     fprintf(dump_file, "\t\t\"ERROR: unreadable message\"\n");
     return 0;
 }
