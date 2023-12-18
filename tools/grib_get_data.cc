@@ -10,54 +10,93 @@
 
 #include <cstdio>
 #include <string>
+#include <iostream>
 #include <vector>
+#include <map>
 
 #include "grib_tools.h"
 
 static void print_key_values(grib_values* values, int values_count);
 static grib_values* get_key_values(grib_runtime_options* options, grib_handle* h);
 
+
 grib_option grib_options[] = {
     /*  {id, args, help}, on, command_line, value */
-    {"S", nullptr, nullptr, 1, 0, nullptr},
-    {"M", nullptr, nullptr, 0, 1, nullptr},
     {"m:", "missingValue",
      "\n\t\tThe missing value is given through this option."
      "\n\t\tAny string is allowed and it is printed in place of the missing"
-     "\n\t\tvalues. Default is to skip the missing values.\n",
-     0, 1, nullptr},
-    {"p:", nullptr, nullptr, 0, 1, nullptr},
+     "\n\t\tvalues. Default is to skip the missing values.\n"},
     {"F:", "format", "\n\t\tC style format for data values. Default is \"%.10e\"\n", 0, 1, nullptr},
     {"L:", "format", "\n\t\tC style format for latitudes/longitudes. Default is \"%9.3f%9.3f\"\n", 0, 1, nullptr},
-    {"w:", nullptr, nullptr, 0, 1, nullptr},
     {"s:", nullptr, nullptr, 0, 1, nullptr},
-    {"f", nullptr, nullptr, 0, 1, nullptr},
-    {"G", nullptr, nullptr, 0, 1, nullptr},
-    {"7", nullptr, nullptr, 0, 1, nullptr},
-    {"X:", nullptr, nullptr, 0, 1, nullptr},
-    {"V", nullptr, nullptr, 0, 1, nullptr},
-    {"h", nullptr, nullptr, 0, 1, nullptr},
 };
 
 const char* tool_description =
-    "Print a latitude, longitude, data values list.\n"
-    "\tNote: Rotated grids are first unrotated";
+    ;
 const char* tool_name       = "grib_get_data";
 const char* tool_online_doc = "https://confluence.ecmwf.int/display/ECC/grib_get_data";
-const char* tool_usage      = "[options] grib_file grib_file ...";
+const char* tool_usage      = ;
 
 int grib_options_count = sizeof(grib_options) / sizeof(grib_option);
 
+
+
+
+
+
+
+
 int main(int argc, char* argv[]) {
-    return grib_tool(argc, argv);
-}
+    // options
+    struct option_t{
+        std::string args;
+        std::string help;
+        std::string value;
+    };
 
-int grib_tool_before_getopt(grib_runtime_options* options) {
-    return 0;
-}
+    std::map<char, option_t> options{
+                                     {'m',{"missingValue", "The missing value is given through this option. Any string is allowed and it is printed in place of the missing values. Default is to skip the missing values."}},
+                                     {'F', {"format", "C style format for data values. Default is \"%.10e\""}},
+                                     {'L', {"format", "C style format for latitudes/longitudes. Default is \"%9.3f%9.3f\""}},
+                                     {'s', {"", ""}},
+                                     };
 
-int grib_tool_init(grib_runtime_options* options) {
-    return 0;
+    for (int opt=0;(opt = getopt(argc, argv, "m:F:L:s:")) != -1;) {
+        auto key = static_cast<char>(opt);
+
+        if (key == '?' || key == 'h') {
+            std::cout << "\nNAME \tgrib_get_data"
+                         "\n"
+                         "\nDESCRIPTION"
+                         "\n\tPrint a latitude, longitude, data values list."
+                         "\n"
+                         "\tNote: Rotated grids are first unrotated"
+                         "\n"
+                         "\n"
+                         "USAGE "
+                         "\n\tgrib_get_data [options] grib_file grib_file ..."
+                         "\n"
+                         "\n"
+                         "OPTIONS"
+                         "\n";
+            for (const auto& option : options) {
+                    std::cout << "\t-" << option.first << " " << option.second.args << "\t" << option.second.help << "\n";
+            }
+            std::cout << "\n";
+            exit(1);
+        };
+
+        options[key].value = optarg;
+    }
+
+
+
+
+
+
+
+
+
 }
 
 int grib_tool_new_filename_action(grib_runtime_options* options, const char* file) {
@@ -70,6 +109,9 @@ int grib_tool_new_file_action(grib_runtime_options* options, grib_tools_file* fi
 }
 
 int grib_tool_new_handle_action(grib_runtime_options* options, grib_handle* h) {
+
+
+
     int err = 0;
 
     long numberOfPoints = 0;
