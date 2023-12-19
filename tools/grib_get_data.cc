@@ -13,17 +13,22 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "unistd.h"
 
 #include "eccodes.h"
+#include "eccodes/geo/GribConfiguration.h"
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/geo/Grid.h"
+#include "eckit/runtime/Main.h"
 
 
 int main(int argc, char* argv[]) {
+    eckit::Main::initialise(argc, argv);
     // options
     struct option_t {
         std::string args;
@@ -102,14 +107,19 @@ int main(int argc, char* argv[]) {
         int err = 0;
         for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, in, PRODUCT_GRIB, &err)) != nullptr;) {
             ASSERT(err == CODES_SUCCESS);
+            ASSERT(h != nullptr);
+
+            eccodes::geo::GribConfiguration config(h);
 
 
             // values
             size_t values_len = 0;
             CODES_CHECK(codes_get_size(h, "values", &values_len), nullptr);
+            ASSERT(0 < values_len);
 
-            // std::vector<double> values(values_len);
-            // CODES_CHECK(codes_get_double_array(h, "values", values.data(), &values_len), nullptr);
+            long N = config.getLong("numberOfDataPoints");
+            ASSERT(0 < N);
+            ASSERT(static_cast<size_t>(N) == values_len);
 
 
             // missing values (bitmap)
@@ -134,29 +144,58 @@ int main(int argc, char* argv[]) {
             }
 
 
-            // lat/lon/values iterator
-            auto* iter = codes_grib_iterator_new(h, 0, &err);
-            ASSERT(err == CODES_SUCCESS);
+            if constexpr (true) {
+                // eckit::geo lat/lon/values iterator
 
-            std::printf("Latitude Longitude Value\n");
+                std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));
+                ASSERT(grid->size() == values_len);
 
-            size_t n = 0;
-            for (double lat = 0, lon = 0, value = 0; codes_grib_iterator_next(iter, &lat, &lon, &value) != 0; ++n) {
-                auto is_missing_val = missingValuesPresent && (bitmap.empty() ? value == missingValue : bitmap[n] == 0);
-                if (!is_missing_val) {
-                    std::printf(fmt_val.c_str(), lat, lon, value);
+                auto [lats, lons] = grid->to_latlon();
+                ASSERT(lats.size() == lons.size());
+                ASSERT(lats.size() == values_len);
+
+                std::vector<double> values(values_len);
+                CODES_CHECK(codes_get_double_array(h, "values", values.data(), &values_len), nullptr);
+
+                std::printf("Latitude Longitude Value\n");
+
+                size_t n = 0;
+                for (auto lat = lats.begin(), lon = lons.begin(), value = values.begin(); lat != lats.end();
+                     ++lat, ++lon, ++value, ++n) {
+                    auto is_missing_val =
+                        missingValuesPresent && (bitmap.empty() ? *value == missingValue : bitmap[n] == 0);
+                    if (!is_missing_val) {
+                        std::printf(fmt_val.c_str(), *lat, *lon, *value);
+                    }
+                    else if (!fmt_miss.empty()) {
+                        std::printf(fmt_miss.c_str(), *lat, *lon);
+                    }
                 }
-                else if (!fmt_miss.empty()) {
-                    std::printf(fmt_miss.c_str(), lat, lon);
-                }
+
+                ASSERT(n == values_len);
             }
+            else {
+                // eccodes lat/lon/values iterator
 
-            ASSERT(n == values_len);
+                auto* iter = codes_grib_iterator_new(h, 0, &err);
+                ASSERT(err == CODES_SUCCESS);
 
+                std::printf("Latitude Longitude Value\n");
 
-            // cleanup
-            codes_grib_iterator_delete(iter);
-            codes_handle_delete(h);
+                size_t n = 0;
+                for (double lat = 0, lon = 0, value = 0; codes_grib_iterator_next(iter, &lat, &lon, &value) != 0; ++n) {
+                    auto is_missing_val =
+                        missingValuesPresent && (bitmap.empty() ? value == missingValue : bitmap[n] == 0);
+                    if (!is_missing_val) {
+                        std::printf(fmt_val.c_str(), lat, lon, value);
+                    }
+                    else if (!fmt_miss.empty()) {
+                        std::printf(fmt_miss.c_str(), lat, lon);
+                    }
+                }
+
+                ASSERT(n == values_len);
+            }
         }
 
         std::fclose(in);
