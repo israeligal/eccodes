@@ -14,6 +14,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]) {
             std::cout << "\t-" << option.first << " " << option.second.args << "\t" << option.second.help << "\n";
         }
         std::cout << "\n";
+        exit(1);
     };
 
     std::map<char, option_t> options{
@@ -67,20 +69,17 @@ int main(int argc, char* argv[]) {
           "missing values."}},
         {'L', {"format", "C style format for latitudes/longitudes.", "%9.3f%9.3f"}},
         {'F', {"format", "C style format for data values.", "%.10e"}},
-#if 0
         {'s',
          {"key[:{s|d|i}]=value,key[:{s|d|i}]=value,...",
           "Key/values to set. For each key a string (key:s), a double (key:d) or an integer (key:i) type can be "
           "defined. By default the native type is set.\n"}},
-#endif
     };
 
-    for (int opt = 0; (opt = getopt(argc, argv, "m:F:L:" /*"s:"*/)) != -1;) {
+    for (int opt = 0; (opt = getopt(argc, argv, "m:F:L:s:")) != -1;) {
         auto key = static_cast<char>(opt);
 
         if (key == '?' || key == 'h') {
             usage(argv[0], options);
-            exit(1);
         };
 
         options[key].value = optarg;
@@ -98,12 +97,10 @@ int main(int argc, char* argv[]) {
         ASSERT(2 == std::count(fmt_miss.begin(), fmt_miss.end(), '%'));
     }
 
-
     // grib_file grib_file ...
     auto arg = static_cast<int>(optind);
     if (arg >= argc) {
         usage(argv[0], options);
-        exit(1);
     }
 
     for (; arg < argc; ++arg) {
@@ -114,6 +111,40 @@ int main(int argc, char* argv[]) {
         for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, in, PRODUCT_GRIB, &err)) != nullptr;) {
             ASSERT(err == CODES_SUCCESS);
             ASSERT(h != nullptr);
+
+
+            // set user-specified key/values
+            {
+                const std::string& keyvals = options['s'].value;
+                const std::regex keyvals_regex(",?([A-z]+)(|:[sdi])=([^,]+)");
+                std::smatch ktv;
+
+                for (std::string::size_type from = 0; from != std::string::npos;) {
+                    auto to     = keyvals.find(',', from + 1);
+                    auto keyval = keyvals.substr(from, to != std::string::npos ? to - from : to);
+                    from        = to;
+
+                    if (std::regex_match(keyval, ktv, keyvals_regex)) {
+                        ASSERT(ktv.size() == 4);
+
+                        if (const auto key = ktv[1].str(), type = ktv[2].str(), value = ktv[3].str(); type == ":s") {
+                            auto len = value.length();
+                            codes_set_string(h, key.c_str(), value.c_str(), &len);
+                            continue;
+                        }
+                        else if (type == ":d") {
+                            codes_set_double(h, key.c_str(), std::stod(value));
+                            continue;
+                        }
+                        else if (type == ":i" || type.empty()) {
+                            codes_set_long(h, key.c_str(), std::stol(value));
+                            continue;
+                        }
+                    }
+
+                    usage(argv[0], options);
+                }
+            }
 
 
             // values, missing values (bitmap)
@@ -160,7 +191,7 @@ int main(int argc, char* argv[]) {
                 std::printf("Latitude Longitude Value\n");
 
                 size_t n = 0;
-                for (auto lat = lats.begin(), lon = lons.begin(), value = values.begin(); lat != lats.end();
+                for (auto lat = lats.begin(), lon = lons.begin(), value = values.begin(); n < N;
                      ++lat, ++lon, ++value, ++n) {
                     auto is_missing_val =
                         missingValuesPresent && (bitmap.empty() ? *value == missingValue : bitmap[n] == 0);
