@@ -49,7 +49,7 @@ struct Input {
 };
 
 
-class GribGetData : public eckit::Tool {
+class GribGetDataDiff : public eckit::Tool {
 private:
     void run() override;
 
@@ -59,7 +59,7 @@ private:
     std::vector<eckit::option::Option*> options_;
 
 public:
-    GribGetData(int argc, char** argv) : eckit::Tool(argc, argv, "ECKIT_GEO_HOME") {
+    GribGetDataDiff(int argc, char** argv) : eckit::Tool(argc, argv, "ECKIT_GEO_HOME") {
         options_.push_back(new eckit::option::SimpleOption<prec_t>("precision", "Output precision"));
         options_.push_back(new eckit::option::SimpleOption<bool>("ecc", "eccodes latitude/longitude"));
         options_.push_back(new eckit::option::SimpleOption<bool>("geo", "eckit::geo latitude/longitude"));
@@ -81,7 +81,7 @@ public:
 };
 
 
-void GribGetData::run() {
+void GribGetDataDiff::run() {
     eckit::option::CmdArgs args(&usage, options_, numberOfPositionalArguments(), minimumPositionalArguments());
 
     auto geo = args.getBool("geo", true);
@@ -162,6 +162,6 @@ void GribGetData::run() {
 
 
 int main(int argc, char** argv) {
-    eccodes::tools::GribGetData tool(argc, argv);
+    eccodes::tools::GribGetDataDiff tool(argc, argv);
     return tool.start();
 }
