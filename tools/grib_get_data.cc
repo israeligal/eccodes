@@ -67,10 +67,15 @@ int main(int argc, char* argv[]) {
           "missing values."}},
         {'L', {"format", "C style format for latitudes/longitudes.", "%9.3f%9.3f"}},
         {'F', {"format", "C style format for data values.", "%.10e"}},
-        {'s', {"", ""}},
+#if 0
+        {'s',
+         {"key[:{s|d|i}]=value,key[:{s|d|i}]=value,...",
+          "Key/values to set. For each key a string (key:s), a double (key:d) or an integer (key:i) type can be "
+          "defined. By default the native type is set.\n"}},
+#endif
     };
 
-    for (int opt = 0; (opt = getopt(argc, argv, "m:F:L:s:")) != -1;) {
+    for (int opt = 0; (opt = getopt(argc, argv, "m:F:L:" /*"s:"*/)) != -1;) {
         auto key = static_cast<char>(opt);
 
         if (key == '?' || key == 'h') {
@@ -110,20 +115,12 @@ int main(int argc, char* argv[]) {
             ASSERT(err == CODES_SUCCESS);
             ASSERT(h != nullptr);
 
-            eccodes::geo::GribConfiguration config(h);
 
-
-            // values
-            size_t values_len = 0;
-            CODES_CHECK(codes_get_size(h, "values", &values_len), nullptr);
-            ASSERT(0 < values_len);
-
-            long N = config.getLong("numberOfDataPoints");
+            // values, missing values (bitmap)
+            size_t N = 0;
+            CODES_CHECK(codes_get_size(h, "values", &N), nullptr);
             ASSERT(0 < N);
-            ASSERT(static_cast<size_t>(N) == values_len);
 
-
-            // missing values (bitmap)
             double missingValue = 9999;
             CODES_CHECK(codes_get_double(h, "missingValue", &missingValue), nullptr);
 
@@ -138,7 +135,7 @@ int main(int argc, char* argv[]) {
                 CODES_CHECK(codes_get_size(h, "bitmap", &len), nullptr);
 
                 ASSERT(missingValuesPresent);
-                ASSERT(values_len == len);
+                ASSERT(N == len);
 
                 bitmap.resize(len);
                 CODES_CHECK(codes_get_long_array(h, "bitmap", bitmap.data(), &len), nullptr);
@@ -148,15 +145,17 @@ int main(int argc, char* argv[]) {
             if constexpr (true) {
                 // eckit::geo lat/lon/values iterator
 
+                eccodes::geo::GribConfiguration config(h);
                 std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));
-                ASSERT(grid->size() == values_len);
+
+                auto numberOfDataPoints = config.getLong("numberOfDataPoints");
+                ASSERT(N == static_cast<size_t>(numberOfDataPoints));
 
                 auto [lats, lons] = grid->to_latlon();
-                ASSERT(lats.size() == lons.size());
-                ASSERT(lats.size() == values_len);
+                ASSERT(N == grid->size() && N == lats.size() && N == lons.size());
 
-                std::vector<double> values(values_len);
-                CODES_CHECK(codes_get_double_array(h, "values", values.data(), &values_len), nullptr);
+                std::vector<double> values(N);
+                CODES_CHECK(codes_get_double_array(h, "values", values.data(), &N), nullptr);
 
                 std::printf("Latitude Longitude Value\n");
 
@@ -173,7 +172,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                ASSERT(n == values_len);
+                ASSERT(n == N);
             }
             else {
                 // eccodes lat/lon/values iterator
@@ -195,7 +194,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                ASSERT(n == values_len);
+                ASSERT(n == N);
             }
         }
 
