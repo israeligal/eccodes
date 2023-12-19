@@ -108,7 +108,8 @@ int main(int argc, char* argv[]) {
         ASSERT_MSG(in != nullptr, "ERROR: unable to open file '" + std::string(argv[arg]) + "'");
 
         int err = 0;
-        for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, in, PRODUCT_GRIB, &err)) != nullptr;) {
+        for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, in, PRODUCT_GRIB, &err)) != nullptr;
+             codes_handle_delete(h)) {
             ASSERT(err == CODES_SUCCESS);
             ASSERT(h != nullptr);
 
@@ -225,6 +226,8 @@ int main(int argc, char* argv[]) {
                 }
 
                 ASSERT(n == N);
+
+                codes_grib_iterator_delete(iter);
             }
         }
 
