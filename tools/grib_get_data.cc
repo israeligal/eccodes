@@ -29,6 +29,7 @@
 
 int main(int argc, char* argv[]) {
     eckit::Main::initialise(argc, argv);
+
     // options
     struct option_t {
         std::string args;
