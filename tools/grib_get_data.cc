@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
         {'s',
          {"key[:{s|d|i}]=value,key[:{s|d|i}]=value,...",
           "Key/values to set. For each key a string (key:s), a double (key:d) or an integer (key:i) type can be "
-          "defined. By default the native type is set.\n"}},
+          "defined. By default 'i' (long) type is set.\n"}},
     };
 
     for (int opt = 0; (opt = getopt(argc, argv, "m:F:L:s:")) != -1;) {
@@ -114,20 +114,19 @@ int main(int argc, char* argv[]) {
 
 
             // set user-specified key/values
-            {
-                const std::string& keyvals = options['s'].value;
-                const std::regex keyvals_regex(",?([A-z]+)(|:[sdi])=([^,]+)");
-                std::smatch ktv;
+            if (const std::string& s = options['s'].value; !s.empty()) {
+                const std::regex regex(",?([A-z0-9]+)(|:[sdi])=([^,]+)");
+                std::smatch match;
 
-                for (std::string::size_type from = 0; from != std::string::npos;) {
-                    auto to     = keyvals.find(',', from + 1);
-                    auto keyval = keyvals.substr(from, to != std::string::npos ? to - from : to);
-                    from        = to;
+                for (std::string::size_type from = 0, to = 0; from != std::string::npos; from = to) {
+                    to            = s.find(',', from + 1);
+                    const auto kv = s.substr(from, to == std::string::npos ? to : to - from);
 
-                    if (std::regex_match(keyval, ktv, keyvals_regex)) {
-                        ASSERT(ktv.size() == 4);
+                    if (std::regex_match(kv, match, regex)) {
+                        ASSERT(match.size() == 4);
 
-                        if (const auto key = ktv[1].str(), type = ktv[2].str(), value = ktv[3].str(); type == ":s") {
+                        if (const auto key = match[1].str(), type = match[2].str(), value = match[3].str();
+                            type == ":s") {
                             auto len = value.length();
                             codes_set_string(h, key.c_str(), value.c_str(), &len);
                             continue;
