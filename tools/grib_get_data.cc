@@ -9,6 +9,7 @@
  */
 
 
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <map>
@@ -20,9 +21,6 @@
 #include "eccodes.h"
 
 #include "eckit/exception/Exceptions.h"
-
-
-auto* OUT = stdout;
 
 
 int main(int argc, char* argv[]) {
@@ -77,16 +75,17 @@ int main(int argc, char* argv[]) {
         options[key].value = optarg;
     }
 
-    if (auto L = options['L']; !L.value.empty() && L.value.back() != ' ') {
-        // Add a final space to separate from data values
-        L.value += ' ';
-        options['L'] = L;
-    }
+    const auto& L = options['L'].value;
+    ASSERT(!L.empty());
 
-    const auto missing_string = options['m'].value;
-    const auto skip_missing   = missing_string.empty();
-    const auto* fmt_L         = options['L'].value.c_str();
-    const auto* fmt_F         = options['F'].value.c_str();
+    std::string fmt_val = L + (L.back() == ' ' ? "" : " ") + options['F'].value + "\n";
+    ASSERT(3 == std::count(fmt_val.begin(), fmt_val.end(), '%'));
+
+    std::string fmt_miss;
+    if (!options['m'].value.empty()) {
+        fmt_miss = L + (L.back() == ' ' ? "" : " ") + options['m'].value + "\n";
+        ASSERT(2 == std::count(fmt_miss.begin(), fmt_miss.end(), '%'));
+    }
 
 
     // grib_file grib_file ...
@@ -139,22 +138,16 @@ int main(int argc, char* argv[]) {
             auto* iter = codes_grib_iterator_new(h, 0, &err);
             ASSERT(err == CODES_SUCCESS);
 
-            std::fprintf(OUT, "Latitude Longitude Value\n");
+            std::printf("Latitude Longitude Value\n");
 
             size_t n = 0;
             for (double lat = 0, lon = 0, value = 0; codes_grib_iterator_next(iter, &lat, &lon, &value) != 0; ++n) {
-                auto is_missing_val = bitmap.empty() ? missingValuesPresent && value == missingValue : bitmap[n] == 0;
-                if (!is_missing_val || !skip_missing) {
-                    std::fprintf(OUT, fmt_L, lat, lon);
-
-                    if (!skip_missing && is_missing_val) {
-                        std::fprintf(OUT, "%s", missing_string.c_str());
-                    }
-                    else {
-                        std::fprintf(OUT, fmt_F, value);
-                    }
-
-                    std::fprintf(OUT, "\n");
+                auto is_missing_val = missingValuesPresent && (bitmap.empty() ? value == missingValue : bitmap[n] == 0);
+                if (!is_missing_val) {
+                    std::printf(fmt_val.c_str(), lat, lon, value);
+                }
+                else if (!fmt_miss.empty()) {
+                    std::printf(fmt_miss.c_str(), lat, lon);
                 }
             }
 
