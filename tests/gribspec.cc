@@ -9,12 +9,35 @@
  */
 
 
+#include <cstdio>
+#include <iostream>
+
+#include "eckit/exception/Exceptions.h"
+
 #include "eccodes.h"
 #include "eccodes/geo/GribSpec.h"
 
 
-int main(int argc, char* argv[]) {
-  return 1;
+int main(int argc, const char* argv[]) {
+    for (int arg = 1; arg < argc; ++arg) {
+        const std::string filename(argv[arg]);
+
+        auto* file = std::fopen(argv[arg], "r");
+        ASSERT_MSG(file != nullptr, "ERROR: unable to open file '" + filename + "'");
+
+        int err = 0;
+        for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, file, PRODUCT_GRIB, &err)) != nullptr;
+             codes_handle_delete(h)) {
+            ASSERT(err == CODES_SUCCESS);
+            ASSERT(h != nullptr);
+
+            eccodes::geo::GribSpec spec(h);
+            std::cout << "spec: " << spec << std::endl;
+
+            codes_handle_delete(h);
+            fclose(file);
+        }
+    }
+
+    return 1;
 }
-
-

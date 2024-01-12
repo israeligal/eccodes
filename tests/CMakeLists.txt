@@ -82,11 +82,10 @@ endforeach()
 
 
 # Unit tests
-foreach( test
-    gribspec
-    )
-    ecbuild_add_test( TARGET eccodes_t_${test} SOURCES ${test}.cc LIBS eccodes )
-endforeach()
+ecbuild_add_test( TARGET  eccodes_t_gribspec
+                  SOURCES gribspec.cc
+                  ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/../samples/reduced_gg_sfc_grib2.tmpl
+                  LIBS    eccodes )
 
 
 # Now add each test (shell scripts)
