@@ -81,6 +81,14 @@ foreach( tool ${test_c_bins} )
 endforeach()
 
 
+# Unit tests
+foreach( test
+    gribspec
+    )
+    ecbuild_add_test( TARGET eccodes_t_${test} SOURCES ${test}.cc LIBS eccodes )
+endforeach()
+
+
 # Now add each test (shell scripts)
 #################################################
 if( HAVE_BUILD_TOOLS )
