@@ -10,7 +10,7 @@
  */
 
 
-#include "eccodes/geo/GribConfiguration.h"
+#include "eccodes/geo/GribSpec.h"
 
 #include <algorithm>
 #include <cstring>
@@ -32,7 +32,7 @@
 #include "eckit/geo/PointLonLat.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
-#include "eckit/value/Value.h"
+#include "eckit/exception/Exceptions.h"
 
 
 namespace eccodes::geo {
@@ -56,8 +56,6 @@ namespace {
 
 
 using eckit::Log;
-
-const eckit::Value EMPTY_ROOT;
 
 
 class Condition {
@@ -404,7 +402,7 @@ ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_gr
 
                         std::ostringstream msgs;
                         msgs.precision(32);
-                        msgs << "GribConfiguration: wrongly encoded longitudeOfLastGridPointInDegrees:"
+                        msgs << "GribParametrisation: wrongly encoded longitudeOfLastGridPointInDegrees:"
                              << "\n"
                                 "encoded:  "
                              << Lon2
@@ -462,7 +460,7 @@ ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids
             // TODO refactor, not really specific to "periodic regular grids", but useful
             std::ostringstream msgs;
             msgs.precision(32);
-            msgs << "GribConfiguration: wrongly encoded iDirectionIncrementInDegrees:"
+            msgs << "GribParametrisation: wrongly encoded iDirectionIncrementInDegrees:"
                     "\n"
                     "encoded: "
                  << we
@@ -603,12 +601,12 @@ using std::recursive_mutex;
 static util::recursive_mutex MUTEX;
 
 
-GribConfiguration::GribConfiguration(codes_handle* h) : eckit::Configuration(EMPTY_ROOT), handle_(h) {
+GribSpec::GribSpec(codes_handle* h) : handle_(h) {
     ASSERT(handle_ != nullptr);
 }
 
 
-bool GribConfiguration::has(const std::string& name) const {
+bool GribSpec::has(const std::string& name) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.has(name)) {
@@ -626,7 +624,7 @@ bool GribConfiguration::has(const std::string& name) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::string& value) const {
+bool GribSpec::get(const std::string& name, std::string& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -665,7 +663,7 @@ bool GribConfiguration::get(const std::string& name, std::string& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, bool& value) const {
+bool GribSpec::get(const std::string& name, bool& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -689,7 +687,7 @@ bool GribConfiguration::get(const std::string& name, bool& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, int& value) const {
+bool GribSpec::get(const std::string& name, int& value) const {
     if (long v = 0; get(name, v)) {
         ASSERT(static_cast<long>(static_cast<int>(v)) == v);
         value = static_cast<int>(v);
@@ -700,7 +698,7 @@ bool GribConfiguration::get(const std::string& name, int& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, long& value) const {
+bool GribSpec::get(const std::string& name, long& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -725,17 +723,17 @@ bool GribConfiguration::get(const std::string& name, long& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, long long& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, long long& /*value*/) const {
     return false;
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, std::size_t& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, std::size_t& /*value*/) const {
     return false;
 }
 
 
-bool GribConfiguration::get(const std::string& name, float& value) const {
+bool GribSpec::get(const std::string& name, float& value) const {
     if (cache_.get(name, value)) {
         return true;
     }
@@ -749,7 +747,7 @@ bool GribConfiguration::get(const std::string& name, float& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& name, double& value) const {
+bool GribSpec::get(const std::string& name, double& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -791,12 +789,12 @@ bool GribConfiguration::get(const std::string& name, double& value) const {
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, std::vector<int>& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, std::vector<int>& /*value*/) const {
     return false;
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<long>& value) const {
+bool GribSpec::get(const std::string& name, std::vector<long>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -825,7 +823,7 @@ bool GribConfiguration::get(const std::string& name, std::vector<long>& value) c
 
     if (name == "pl") {
         if (std::find(value.rbegin(), value.rend(), 0) != value.rend()) {
-            wrongly_encoded_grib("GribConfiguration: pl array contains zeros");
+            wrongly_encoded_grib("GribParametrisation: pl array contains zeros");
         }
     }
 
@@ -834,17 +832,17 @@ bool GribConfiguration::get(const std::string& name, std::vector<long>& value) c
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, std::vector<long long>& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, std::vector<long long>& /*value*/) const {
     return false;
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, std::vector<std::size_t>& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, std::vector<std::size_t>& /*value*/) const {
     return false;
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<float>& value) const {
+bool GribSpec::get(const std::string& name, std::vector<float>& value) const {
     if (cache_.get(name, value)) {
         return true;
     }
@@ -864,7 +862,7 @@ bool GribConfiguration::get(const std::string& name, std::vector<float>& value) 
 }
 
 
-bool GribConfiguration::get(const std::string& name, std::vector<double>& value) const {
+bool GribSpec::get(const std::string& name, std::vector<double>& value) const {
     util::lock_guard<util::recursive_mutex> lock(MUTEX);
 
     if (cache_.get(name, value)) {
@@ -922,13 +920,14 @@ bool GribConfiguration::get(const std::string& name, std::vector<double>& value)
 }
 
 
-bool GribConfiguration::get(const std::string& /*name*/, std::vector<std::string>& /*value*/) const {
+bool GribSpec::get(const std::string& /*name*/, std::vector<std::string>& /*value*/) const {
     return false;
 }
 
 
-void GribConfiguration::print(std::ostream& out) const {
-    out << "{}";
+void GribSpec::json(eckit::JSON&) const
+{
+    NOTIMP;
 }
 
 

@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "eccodes.h"
-#include "eccodes/geo/GribConfiguration.h"
+#include "eccodes/geo/GribSpec.h"
 
 #include "eckit/filesystem/PathName.h"
 #include "eckit/geo/Grid.h"
@@ -120,10 +120,10 @@ void GribGetDataDiff::run() {
             auto* h = codes_handle_new_from_message(nullptr, buffer, len);
             ASSERT(h != nullptr);
 
-            geo::GribConfiguration config(h);
+            geo::GribSpec config(h);
 
-            long N = config.getLong("numberOfDataPoints");
-            ASSERT(0 < N);
+            long N = 0;
+            ASSERT(config.get("numberOfDataPoints", N) && 0 < N);
 
             if (geo) {
                 std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));

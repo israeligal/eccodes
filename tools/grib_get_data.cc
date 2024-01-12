@@ -21,7 +21,7 @@
 #include "unistd.h"
 
 #include "eccodes.h"
-#include "eccodes/geo/GribConfiguration.h"
+#include "eccodes/geo/GribSpec.h"
 
 #include "eckit/exception/Exceptions.h"
 #include "eckit/geo/Grid.h"
@@ -176,10 +176,10 @@ int main(int argc, char* argv[]) {
             if constexpr (true) {
                 // eckit::geo lat/lon/values iterator
 
-                eccodes::geo::GribConfiguration config(h);
+                eccodes::geo::GribSpec config(h);
                 std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));
 
-                auto numberOfDataPoints = config.getLong("numberOfDataPoints");
+                auto numberOfDataPoints = config.get_long("numberOfDataPoints");
                 ASSERT(N == static_cast<size_t>(numberOfDataPoints));
 
                 auto [lats, lons] = grid->to_latlon();

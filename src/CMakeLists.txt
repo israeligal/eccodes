@@ -408,8 +408,8 @@ if( HAVE_MEMFS )
 endif()
 
 list( APPEND eccodes_src_files
-    eccodes/geo/GribConfiguration.cc
-    eccodes/geo/GribConfiguration.h )
+    eccodes/geo/GribSpec.cc
+    eccodes/geo/GribSpec.h )
 
 ecbuild_add_library( TARGET    eccodes
                      SOURCES   ${CMAKE_CURRENT_BINARY_DIR}/grib_api_version.cc

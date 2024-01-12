@@ -17,8 +17,8 @@
 #include <string>
 #include <vector>
 
-#include "eckit/config/Configuration.h"
-#include "eckit/config/MappedConfiguration.h"
+#include "eckit/geo/Spec.h"
+#include "eckit/geo/spec/Custom.h"
 
 
 namespace eccodes::geo {
@@ -27,12 +27,9 @@ namespace eccodes::geo {
 bool codes_check_error(int e, const char* call);
 
 
-class GribConfiguration final : public eckit::Configuration {
+class GribSpec final : public eckit::geo::Spec {
 public:
-    explicit GribConfiguration(codes_handle*);
-
-private:
-    // -- Methods
+    explicit GribSpec(codes_handle*);
 
     bool has(const std::string& name) const override;
 
@@ -52,12 +49,11 @@ private:
     bool get(const std::string& name, std::vector<double>& value) const override;
     bool get(const std::string& name, std::vector<std::string>& value) const override;
 
-    void print(std::ostream&) const override;
-
-    // -- Members
-
-    mutable eckit::MappedConfiguration cache_;
+private:
+    mutable eckit::geo::spec::Custom cache_;
     codes_handle* handle_;
+
+    void json(eckit::JSON&) const final;
 };
 
 
