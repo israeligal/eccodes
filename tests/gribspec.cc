@@ -10,34 +10,53 @@
 
 
 #include <cstdio>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/parser/JSONParser.h"
 
 #include "eccodes.h"
 #include "eccodes/geo/GribSpec.h"
 
 
 int main(int argc, const char* argv[]) {
-    for (int arg = 1; arg < argc; ++arg) {
-        const std::string filename(argv[arg]);
+    ASSERT_MSG(argc == 3, "ERROR: expected 2 arguments: grib_file json_file");
 
-        auto* file = std::fopen(argv[arg], "r");
-        ASSERT_MSG(file != nullptr, "ERROR: unable to open file '" + filename + "'");
 
-        int err = 0;
-        for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, file, PRODUCT_GRIB, &err)) != nullptr;
-             codes_handle_delete(h)) {
-            ASSERT(err == CODES_SUCCESS);
-            ASSERT(h != nullptr);
+    // create a JSON string ("GribSpec") from the GRIB file
+    std::string result_string;
 
-            eccodes::geo::GribSpec spec(h);
-            std::cout << "spec: " << spec << std::endl;
+    auto* grib_file = std::fopen(argv[1], "r");
+    ASSERT_MSG(grib_file != nullptr, "ERROR: unable to open file '" + std::string(argv[1]) + "'");
 
-            codes_handle_delete(h);
-            fclose(file);
-        }
+    int err = 0;
+    for (codes_handle* h = nullptr; (h = codes_handle_new_from_file(nullptr, grib_file, PRODUCT_GRIB, &err)) != nullptr;
+         codes_handle_delete(h)) {
+        ASSERT(err == CODES_SUCCESS);
+        ASSERT(h != nullptr);
+
+        result_string = (std::ostringstream{} << eccodes::geo::GribSpec(h)).str();
+        std::cout << result_string << std::endl;
+
+        break; // FIXME processes only the first message
     }
 
-    return 1;
+    std::fclose(grib_file);
+
+
+    // Parse the resulting JSON ("GribSpec") from the GRIB file
+    std::istringstream result_stream(result_string);
+    auto result = eckit::JSONParser(result_stream).parse();
+
+
+    // Parse the reference JSON from the JSON file
+    std::ifstream json_stream(argv[2]);
+    auto reference = eckit::JSONParser(json_stream).parse();
+    json_stream.close();
+
+
+    // Compare
+    return result == reference ? 0 : 1;
 }

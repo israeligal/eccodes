@@ -19,6 +19,7 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
+#include <vector>
 
 #define ECKIT_THREADS
 #if defined(ECKIT_THREADS)
@@ -29,10 +30,11 @@
 #endif
 
 #include "eckit/config/Resource.h"
+#include "eckit/exception/Exceptions.h"
 #include "eckit/geo/PointLonLat.h"
+#include "eckit/log/JSON.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
-#include "eckit/exception/Exceptions.h"
 
 
 namespace eccodes::geo {
@@ -925,14 +927,106 @@ bool GribSpec::get(const std::string& /*name*/, std::vector<std::string>& /*valu
 }
 
 
-void GribSpec::json(eckit::JSON&) const
-{
-    NOTIMP;
+void GribSpec::json(eckit::JSON& j) const {
+    j.startObject();
+
+    auto* kit = codes_keys_iterator_new(
+        handle_, CODES_KEYS_ITERATOR_SKIP_DUPLICATES | CODES_KEYS_ITERATOR_SKIP_READ_ONLY, "geography");
+    ASSERT(kit != nullptr);
+
+    for (; codes_keys_iterator_next(kit) != 0;) {
+        const auto* name = codes_keys_iterator_get_name(kit);
+
+        int err         = 0;
+        bool is_missing = 0 != codes_is_missing(handle_, name, &err);
+        CHECK_ERROR(err, name);
+
+        if (is_missing) {
+            j << name << "MISSING";
+            continue;
+        }
+
+        size_t size = 0;
+        CHECK_CALL(codes_get_size(handle_, name, &size));
+
+        int type = 0;
+        CHECK_CALL(codes_get_native_type(handle_, name, &type));
+
+        if (size > 1) {
+            if (type == CODES_TYPE_LONG) {
+                std::vector<long> array(size);
+
+                auto size_read = size;
+                CHECK_CALL(codes_get_long_array(handle_, name, array.data(), &size_read));
+                ASSERT(size == size_read);
+
+                j << name;
+                j.startList();
+                for (const auto& value : array) {
+                    j << value;
+                }
+                j.endList();
+                continue;
+            }
+
+            if (type == CODES_TYPE_DOUBLE) {
+                std::vector<double> array(size);
+
+                auto size_read = size;
+                CHECK_CALL(codes_get_double_array(handle_, name, array.data(), &size_read));
+                ASSERT(size == size_read);
+
+                j << name;
+                j.startList();
+                for (const auto& value : array) {
+                    j << value;
+                }
+                j.endList();
+                continue;
+            }
+
+            (j << name).startList().endList();
+            continue;
+        }
+
+        if (type == CODES_TYPE_LONG) {
+            long value = 0;
+            CHECK_CALL(codes_get_long(handle_, name, &value));
+            j << name << value;
+            continue;
+        }
+
+        if (type == CODES_TYPE_DOUBLE) {
+            double value = 0;
+            CHECK_CALL(codes_get_double(handle_, name, &value));
+            j << name << value;
+            continue;
+        }
+
+        if (type == CODES_TYPE_STRING) {
+            size_t length = 1024;
+            char value[length];
+            CHECK_CALL(codes_get_string(handle_, name, value, &length));
+            j << name << value;
+            continue;
+        }
+
+        j << name
+          << (type == CODES_TYPE_UNDEFINED ? "UNDEFINED"
+              : type == CODES_TYPE_BYTES   ? "BYTES"
+              : type == CODES_TYPE_SECTION ? "SECTION"
+              : type == CODES_TYPE_LABEL   ? "LABEL"
+              : type == CODES_TYPE_MISSING ? "MISSING"
+                                           : "?");
+    }
+
+    codes_keys_iterator_delete(kit);
+    j.endObject();
 }
+
+
+}  // namespace eccodes::geo
 
 
 #undef CHECK_ERROR
 #undef CHECK_CALL
-
-
-}  // namespace eccodes::geo
