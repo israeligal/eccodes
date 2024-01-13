@@ -21,17 +21,10 @@
 #include <sstream>
 #include <vector>
 
-#define ECKIT_THREADS
-#if defined(ECKIT_THREADS)
-#include "eckit/thread/AutoLock.h"
-#include "eckit/thread/Mutex.h"
-#else
-#include <mutex>
-#endif
-
 #include "eckit/config/Resource.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/geo/PointLonLat.h"
+#include "eckit/geo/util/Mutex.h"
 #include "eckit/log/JSON.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
@@ -561,46 +554,15 @@ bool get_value(const std::string& name, codes_handle* h, T& value, const Process
 }
 
 
-}  // namespace
+eckit::geo::util::recursive_mutex MUTEX;
 
 
-namespace util {
-
-
-#if defined(ECKIT_THREADS)
-
-
-using recursive_mutex = eckit::Mutex;
-
-template <typename T>
-using lock_guard = typename eckit::AutoLock<T>;
-
-struct once_flag {
-    pthread_once_t once_ = PTHREAD_ONCE_INIT;
+class lock_type {
+    eckit::geo::util::lock_guard<eckit::geo::util::recursive_mutex> lock_guard_{MUTEX};
 };
 
-template <class Callable>
-inline void call_once(once_flag& flag, Callable&& fun) {
-    pthread_once(&(flag.once_), fun);
-}
 
-
-#else
-
-
-using std::call_once;
-using std::lock_guard;
-using std::once_flag;
-using std::recursive_mutex;
-
-
-#endif
-
-
-}  // namespace util
-
-
-static util::recursive_mutex MUTEX;
+}  // namespace
 
 
 GribSpec::GribSpec(codes_handle* h) : handle_(h) {
@@ -609,7 +571,7 @@ GribSpec::GribSpec(codes_handle* h) : handle_(h) {
 
 
 bool GribSpec::has(const std::string& name) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.has(name)) {
         return true;
@@ -627,7 +589,7 @@ bool GribSpec::has(const std::string& name) const {
 
 
 bool GribSpec::get(const std::string& name, std::string& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;
@@ -666,7 +628,7 @@ bool GribSpec::get(const std::string& name, std::string& value) const {
 
 
 bool GribSpec::get(const std::string& name, bool& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;
@@ -701,7 +663,7 @@ bool GribSpec::get(const std::string& name, int& value) const {
 
 
 bool GribSpec::get(const std::string& name, long& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;
@@ -750,7 +712,7 @@ bool GribSpec::get(const std::string& name, float& value) const {
 
 
 bool GribSpec::get(const std::string& name, double& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;
@@ -797,7 +759,7 @@ bool GribSpec::get(const std::string& /*name*/, std::vector<int>& /*value*/) con
 
 
 bool GribSpec::get(const std::string& name, std::vector<long>& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;
@@ -865,7 +827,7 @@ bool GribSpec::get(const std::string& name, std::vector<float>& value) const {
 
 
 bool GribSpec::get(const std::string& name, std::vector<double>& value) const {
-    util::lock_guard<util::recursive_mutex> lock(MUTEX);
+    lock_type lock;
 
     if (cache_.get(name, value)) {
         return true;

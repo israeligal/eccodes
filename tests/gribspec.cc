@@ -22,10 +22,11 @@
 
 
 int main(int argc, const char* argv[]) {
-    ASSERT_MSG(argc == 3, "ERROR: expected 2 arguments: grib_file json_file");
+    // FIXME processes only the first message in the GRIB file
+    ASSERT_MSG(argc == 2 || argc == 3, "ERROR: expected 1 or 2 arguments: grib_file [json_file]");
 
 
-    // create a JSON string ("GribSpec") from the GRIB file
+    // Create a JSON string from the GRIB file ("GribSpec")
     std::string result_string;
 
     auto* grib_file = std::fopen(argv[1], "r");
@@ -37,21 +38,24 @@ int main(int argc, const char* argv[]) {
         ASSERT(err == CODES_SUCCESS);
         ASSERT(h != nullptr);
 
-        result_string = (std::ostringstream{} << eccodes::geo::GribSpec(h)).str();
-        std::cout << result_string << std::endl;
+        if (argc == 2) {
+            std::cout << eccodes::geo::GribSpec(h) << std::endl;
+            return 0;
+        }
 
-        break; // FIXME processes only the first message
+        result_string = (std::ostringstream{} << eccodes::geo::GribSpec(h)).str();
+        break;
     }
 
     std::fclose(grib_file);
 
 
-    // Parse the resulting JSON ("GribSpec") from the GRIB file
+    // Parse result from the GRIB file ("GribSpec")
     std::istringstream result_stream(result_string);
     auto result = eckit::JSONParser(result_stream).parse();
 
 
-    // Parse the reference JSON from the JSON file
+    // Parse reference from the JSON file
     std::ifstream json_stream(argv[2]);
     auto reference = eckit::JSONParser(json_stream).parse();
     json_stream.close();
