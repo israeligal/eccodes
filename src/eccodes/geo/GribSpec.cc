@@ -24,7 +24,7 @@
 #include "eckit/config/Resource.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/geo/PointLonLat.h"
-#include "eckit/geo/util/Mutex.h"
+#include "eckit/geo/util/mutex.h"
 #include "eckit/log/JSON.h"
 #include "eckit/types/FloatCompare.h"
 #include "eckit/types/Fraction.h"
