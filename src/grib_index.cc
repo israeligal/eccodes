@@ -1254,7 +1254,7 @@ static int codes_index_add_file_internal(grib_index* index, const char* filename
         if (warn_about_duplicates) {
             const bool offset_is_unique = map_of_offsets.insert( std::pair<off_t, grib_handle*>(h->offset, h) ).second;
             if (!offset_is_unique) {
-                fprintf(stderr, "ECCODES WARNING :  File '%s': field offset %lld is not unique.\n", filename, h->offset);
+                fprintf(stderr, "ECCODES WARNING :  File '%s': field offset %ld is not unique.\n", filename, (long)h->offset);
                 long edition = 0;
                 if (grib_get_long(h, "edition", &edition) == GRIB_SUCCESS && edition == 2) {
                     fprintf(stderr, "ECCODES WARNING :  This can happen if the file contains multi-field GRIB messages.\n");
@@ -1289,6 +1289,11 @@ static int codes_index_add_file_internal(grib_index* index, const char* filename
     if (message_count == 0) {
         grib_context_log(c, GRIB_LOG_ERROR, "File %s contains no messages", filename);
         return GRIB_END_OF_FILE;
+    }
+
+    if (c->debug) {
+        fprintf(stderr, "ECCODES DEBUG %s %s\n", __func__, filename);
+        grib_index_dump(stderr, index, GRIB_DUMP_FLAG_TYPE);
     }
     return GRIB_SUCCESS;
 }

@@ -281,7 +281,7 @@ grib_handle* grib_util_sections_copy(grib_handle* hfrom, grib_handle* hto, int w
 static grib_trie* init_list(const char* name);
 static grib_trie* param_id_list   = NULL;
 static grib_trie* mars_param_list = NULL;
-// TODO thread safe
+
 grib_string_list* grib_util_get_param_id(const char* mars_param)
 {
     if (!mars_param_list && (mars_param_list = init_list("mars_param.table")) == NULL)
@@ -1092,7 +1092,7 @@ grib_handle* grib_util_set_spec(grib_handle* h,
             if (spec->missingValue) COPY_SPEC_DOUBLE(missingValue);
             SET_LONG_VALUE("ijDirectionIncrementGiven", 1);
 
-            // TODO: add Assert
+            // TODO(masn): add Assert
             COPY_SPEC_LONG(Ni);
             COPY_SPEC_DOUBLE(iDirectionIncrementInDegrees);
             COPY_SPEC_LONG(Nj);
@@ -1301,7 +1301,6 @@ grib_handle* grib_util_set_spec(grib_handle* h,
                 fprintf(stderr, "%s: invalid packing_spec.packing_type (%ld)\n", __func__, packing_spec->packing_type);
                 *err = GRIB_INTERNAL_ERROR;
                 goto cleanup;
-                break;
         }
     }
     if (strcmp(input_packing_type, "grid_simple_matrix") == 0) {
@@ -1363,7 +1362,6 @@ grib_handle* grib_util_set_spec(grib_handle* h,
             grib_handle_delete(h_sample);
             *err = GRIB_INTERNAL_ERROR;
             goto cleanup;
-            break;
     }
 
     if (packing_spec->extra_settings_count) {
