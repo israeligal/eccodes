@@ -69,7 +69,8 @@ endforeach()
 # Install generic tools (depending on eckit::geo)
 foreach( _tool
          grib_get_data
-         grib_get_data_diff )
+         grib_get_data_diff
+         grib_get_gridspec )
     ecbuild_add_executable( TARGET   ${_tool}
                             SOURCES  ${_tool}.cc
                             LIBS     ecc_tools eckit_option eckit_geo )
