@@ -43,7 +43,7 @@ int main(int argc, const char* argv[]) {
             return 0;
         }
 
-        result_string = (std::ostringstream{} << eccodes::geo::GribSpec(h)).str();
+        result_string = eccodes::geo::GribSpec(h).str();
         break;
     }
 
