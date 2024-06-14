@@ -1,0 +1,25 @@
+#Vegetation
+'Vegetation' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 192 ;
+	}
+#Biomass burning
+'Biomass burning' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 193 ;
+	}
+#Settlements
+'Settlements' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 194 ;
+	}
+#Soil
+'Soil' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 195 ;
+	}
+#Wild animals
+'Wild animals' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 196 ;
+	}

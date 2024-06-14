@@ -14081,30 +14081,6 @@
 	 parameterCategory = 20 ;
 	 parameterNumber = 195 ;
 	}
-#Emission mass flux from vegetation
-'412000' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 192 ;
-	}
-#Emission mass flux from biomass burning
-'417000' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 193 ;
-	}
-#Emission mass flux from settlements
-'432000' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 194 ;
-	}
 #Emission mass flux from soil
 '442000' = {
 	 localTablesVersion = 1 ;
@@ -14148,22 +14124,6 @@
 	 discipline = 0 ;
 	 parameterCategory = 20 ;
 	 parameterNumber = 195 ;
-	}
-#Emission mass flux from vegetation
-'412000' = {
-	 localTablesVersion = 2 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 192 ;
-	}
-#Emission mass flux from biomass burning
-'417000' = {
-	 localTablesVersion = 2 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 193 ;
 	}
 #Emission mass flux from settlements
 '432000' = {

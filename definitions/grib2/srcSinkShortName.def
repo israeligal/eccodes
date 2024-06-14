@@ -1,0 +1,112 @@
+#Other
+'oth' = {
+	sourceSinkChemicalPhysicalProcess = 0 ;
+	}
+#Aviation
+'aviat' = {
+	sourceSinkChemicalPhysicalProcess = 1 ;
+	}
+#Lightning
+'light' = {
+	sourceSinkChemicalPhysicalProcess = 2 ;
+	}
+#Biogenic sources
+'biog' = {
+	sourceSinkChemicalPhysicalProcess = 3 ;
+	}
+#Anthropogenic sources
+'antrop' = {
+	sourceSinkChemicalPhysicalProcess = 4 ;
+	}
+#Wildfires
+'wildf' = {
+	sourceSinkChemicalPhysicalProcess = 5 ;
+	}
+#Natural sources
+'ntrl' = {
+	sourceSinkChemicalPhysicalProcess = 6 ;
+	}
+#Volcanoes
+'volc' = {
+	sourceSinkChemicalPhysicalProcess = 7 ;
+	}
+#Bio-fuel
+'biof' = {
+	sourceSinkChemicalPhysicalProcess = 8 ;
+	}
+#Fossil-fuel
+'fossilf' = {
+	sourceSinkChemicalPhysicalProcess = 9 ;
+	}
+#Wetlands
+'wetl' = {
+	sourceSinkChemicalPhysicalProcess = 10 ;
+	}
+#Oceans
+'ocea' = {
+	sourceSinkChemicalPhysicalProcess = 11 ;
+	}
+#Elevated anthropogenic sources
+'elev_antr_src' = {
+	sourceSinkChemicalPhysicalProcess = 12 ;
+	}
+#Surface anthropogenic sources
+'sfc_antr_src' = {
+	sourceSinkChemicalPhysicalProcess = 13 ;
+	}
+#Agriculture livestock
+'agri_live' = {
+	sourceSinkChemicalPhysicalProcess = 14 ;
+	}
+#Agriculture soils
+'agri_soil' = {
+	sourceSinkChemicalPhysicalProcess = 15 ;
+	}
+#Agriculture waste burning
+'agri_waste' = {
+	sourceSinkChemicalPhysicalProcess = 16 ;
+	}
+#Agriculture (all)
+'agri_all' = {
+	sourceSinkChemicalPhysicalProcess = 17 ;
+	}
+#Residential, commercial and other combustion
+'combust' = {
+	sourceSinkChemicalPhysicalProcess = 18 ;
+	}
+#Power generation
+'power' = {
+	sourceSinkChemicalPhysicalProcess = 19 ;
+	}
+#Super power stations
+'suppow' = {
+	sourceSinkChemicalPhysicalProcess = 20 ;
+	}
+#Fugitives
+'fug' = {
+	sourceSinkChemicalPhysicalProcess = 21 ;
+	}
+#Industrial process
+'indproc' = {
+	sourceSinkChemicalPhysicalProcess = 22 ;
+	}
+#Solvents
+'solv' = {
+	sourceSinkChemicalPhysicalProcess = 23 ;
+	}
+#Ships
+'ship' = {
+	sourceSinkChemicalPhysicalProcess = 24 ;
+	}
+#Wastes (solid and water)
+'waste' = {
+	sourceSinkChemicalPhysicalProcess = 25 ;
+	}
+#Road transportation
+'roadtransp' = {
+	sourceSinkChemicalPhysicalProcess = 26 ;
+	}
+#Off-road transportation
+'offrtransp' = {
+	sourceSinkChemicalPhysicalProcess = 27 ;
+	}

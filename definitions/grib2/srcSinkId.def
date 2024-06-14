@@ -1,0 +1,112 @@
+#Other
+'0' = {
+	sourceSinkChemicalPhysicalProcess = 0 ;
+	}
+#Aviation
+'1' = {
+	sourceSinkChemicalPhysicalProcess = 1 ;
+	}
+#Lightning
+'2' = {
+	sourceSinkChemicalPhysicalProcess = 2 ;
+	}
+#Biogenic sources
+'3' = {
+	sourceSinkChemicalPhysicalProcess = 3 ;
+	}
+#Anthropogenic sources
+'4' = {
+	sourceSinkChemicalPhysicalProcess = 4 ;
+	}
+#Wildfires
+'5' = {
+	sourceSinkChemicalPhysicalProcess = 5 ;
+	}
+#Natural sources
+'6' = {
+	sourceSinkChemicalPhysicalProcess = 6 ;
+	}
+#Volcanoes
+'7' = {
+	sourceSinkChemicalPhysicalProcess = 7 ;
+	}
+#Bio-fuel
+'8' = {
+	sourceSinkChemicalPhysicalProcess = 8 ;
+	}
+#Fossil-fuel
+'9' = {
+	sourceSinkChemicalPhysicalProcess = 9 ;
+	}
+#Wetlands
+'10' = {
+	sourceSinkChemicalPhysicalProcess = 10 ;
+	}
+#Oceans
+'11' = {
+	sourceSinkChemicalPhysicalProcess = 11 ;
+	}
+#Elevated anthropogenic sources
+'12' = {
+	sourceSinkChemicalPhysicalProcess = 12 ;
+	}
+#Surface anthropogenic sources
+'13' = {
+	sourceSinkChemicalPhysicalProcess = 13 ;
+	}
+#Agriculture livestock
+'14' = {
+	sourceSinkChemicalPhysicalProcess = 14 ;
+	}
+#Agriculture soils
+'15' = {
+	sourceSinkChemicalPhysicalProcess = 15 ;
+	}
+#Agriculture waste burning
+'16' = {
+	sourceSinkChemicalPhysicalProcess = 16 ;
+	}
+#Agriculture (all)
+'17' = {
+	sourceSinkChemicalPhysicalProcess = 17 ;
+	}
+#Residential, commercial and other combustion
+'18' = {
+	sourceSinkChemicalPhysicalProcess = 18 ;
+	}
+#Power generation
+'19' = {
+	sourceSinkChemicalPhysicalProcess = 19 ;
+	}
+#Super power stations
+'20' = {
+	sourceSinkChemicalPhysicalProcess = 20 ;
+	}
+#Fugitives
+'21' = {
+	sourceSinkChemicalPhysicalProcess = 21 ;
+	}
+#Industrial process
+'22' = {
+	sourceSinkChemicalPhysicalProcess = 22 ;
+	}
+#Solvents
+'23' = {
+	sourceSinkChemicalPhysicalProcess = 23 ;
+	}
+#Ships
+'24' = {
+	sourceSinkChemicalPhysicalProcess = 24 ;
+	}
+#Wastes (solid and water)
+'25' = {
+	sourceSinkChemicalPhysicalProcess = 25 ;
+	}
+#Road transportation
+'26' = {
+	sourceSinkChemicalPhysicalProcess = 26 ;
+	}
+#Off-road transportation
+'27' = {
+	sourceSinkChemicalPhysicalProcess = 27 ;
+	}

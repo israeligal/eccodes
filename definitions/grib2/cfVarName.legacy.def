@@ -180,3 +180,201 @@
  parameterCategory = 0 ;
  parameterNumber = 24 ;
 }
+#Emission mass flux
+'emi_mflx' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 255 ;
+}
+#Emission mass flux from natural sources
+'emi_mflx_natsrc' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 6 ;
+}
+#Emission mass flux from anthropogenic sources
+'emi_mflx_antsrc' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 4 ;
+}
+#Emission mass flux from elevated anthropogenic sources
+'emi_mflx_elevantsrc' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 12 ;
+}
+#Emission mass flux from surface anthropogenic sources
+'emi_mflx_sfcantsrc' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 13 ;
+}
+#Emission from aviation
+'emi_mflx_aviation' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 1 ;
+}
+#Emission mass flux from agriculture livestock
+'emi_mflx_agriliv' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 14 ;
+}
+#Emission mass flux from agriculture soils
+'emi_mflx_agrisol' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 15 ;
+}
+#Emission mass flux from agricultural waste burning
+'emi_mflx_agriwasburn' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 16 ;
+}
+#Emission mass flux from residential, commercial and other combustion
+'emi_mflx_rescomb' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 18 ;
+}
+#Emission mass flux from power generation
+'emi_mflx_powgen' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 19 ;
+}
+#Emission mass flux from fugitives
+'emi_mflx_fug' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 21 ;
+}
+#Emission mass flux from industrial process
+'emi_mflx_indproc' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 22 ;
+}
+#Emission mass flux from solvents
+'emi_mflx_solv' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 23 ;
+}
+#Emission mass flux from ships
+'emi_mflx_shp' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 24 ;
+}
+#Emission mass flux from wastes (solid and water)
+'emi_mflx_wastes' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 25 ;
+}
+#Emission mass flux from off-road transportation
+'emi_mflx_offrdtrans' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 27 ;
+}
+#Emission mass flux from road transportation
+'emi_mflx_rdtrans' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 26 ;
+}
+#Emission mass flux from super power stations
+'emi_mflx_suppowstn' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 20 ;
+}
+#Emission mass flux from volcanoes
+'emi_mflx_vol' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Emission mass flux from wetlands
+'emi_mflx_wetl' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 10 ;
+}
+#Emission mass flux from bio fuel
+'emi_mflx_biofuel' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 8 ;
+}
+#Emission mass flux from fossil fuel
+'emi_mflx_fossilfuel' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 9 ;
+}
+#Emission mass flux from other
+'emi_mflx_other' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 0 ;
+}
+#Emission mass flux from oceans
+'emi_mflx_ocean' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 11 ;
+}
+#Mass mixing ratio from volcanoes
+'mass_mixrat_vol' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 2 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Total column vertically-integrated mass density from volcanoes
+'tc_mdens_vol' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 1 ;
+ typeOfFirstFixedSurface = 1 ;
+ typeOfSecondFixedSurface = 8 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Dry deposition velocity from volcanoes
+'drydep_vel_vol' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 15 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}

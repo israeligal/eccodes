@@ -2,7 +2,6 @@
 
 transient dummyc=0: hidden;
 
-
 concept paramIdLegacyECMF (defaultParameter,"paramId.legacy.def",conceptsMasterDir,conceptsLocalDirECMF): long_type,no_copy,hidden;
 concept paramIdECMF (paramIdLegacyECMF,"paramId.def",conceptsMasterDir,conceptsLocalDirECMF): long_type,no_copy;
 concept paramIdFallback (paramIdECMF,"paramId.def",conceptsDir2,conceptsDir1): long_type;
@@ -54,6 +53,17 @@ if ( !(chemId is "unknown") ) {
  alias parameter.chemId = chemId;
  alias ls.chemShortName = chemShortName;
  alias parameter.chemShortName = chemShortName;
+}
+
+concept srcSinkId (unknown,"srcSinkId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
+concept srcSinkName (unknown,"srcSinkName.def",conceptsDir2,conceptsDir1): no_copy,dump;
+concept srcSinkShortName (unknown,"srcSinkShortName.def",conceptsDir2,conceptsDir1): no_copy,dump;
+
+if ( !(srcSinkId is "unknown") ) {
+ alias mars.srcSink = srcSinkId;
+ alias parameter.srcSinkId = srcSinkId;
+ alias ls.srcSinkShortName = srcSinkShortName;
+ alias parameter.srcSinkShortName = srcSinkShortName;
 }
 
 template_nofail names "grib2/products_[productionStatusOfProcessedData].def";

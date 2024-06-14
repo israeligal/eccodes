@@ -1,0 +1,112 @@
+#Other
+'Other' = {
+	sourceSinkChemicalPhysicalProcess = 0 ;
+	}
+#Aviation
+'Aviation' = {
+	sourceSinkChemicalPhysicalProcess = 1 ;
+	}
+#Lightning
+'Lightning' = {
+	sourceSinkChemicalPhysicalProcess = 2 ;
+	}
+#Biogenic sources
+'Biogenic sources' = {
+	sourceSinkChemicalPhysicalProcess = 3 ;
+	}
+#Anthropogenic sources
+'Anthropogenic sources' = {
+	sourceSinkChemicalPhysicalProcess = 4 ;
+	}
+#Wildfires
+'Wildfires' = {
+	sourceSinkChemicalPhysicalProcess = 5 ;
+	}
+#Natural sources
+'Natural sources' = {
+	sourceSinkChemicalPhysicalProcess = 6 ;
+	}
+#Volcanoes
+'Volcanoes' = {
+	sourceSinkChemicalPhysicalProcess = 7 ;
+	}
+#Bio-fuel
+'Bio-fuel' = {
+	sourceSinkChemicalPhysicalProcess = 8 ;
+	}
+#Fossil-fuel
+'Fossil-fuel' = {
+	sourceSinkChemicalPhysicalProcess = 9 ;
+	}
+#Wetlands
+'Wetlands' = {
+	sourceSinkChemicalPhysicalProcess = 10 ;
+	}
+#Oceans
+'Oceans' = {
+	sourceSinkChemicalPhysicalProcess = 11 ;
+	}
+#Elevated anthropogenic sources
+'Elevated anthropogenic sources' = {
+	sourceSinkChemicalPhysicalProcess = 12 ;
+	}
+#Surface anthropogenic sources
+'Surface anthropogenic sources' = {
+	sourceSinkChemicalPhysicalProcess = 13 ;
+	}
+#Agriculture livestock
+'Agriculture livestock' = {
+	sourceSinkChemicalPhysicalProcess = 14 ;
+	}
+#Agriculture soils
+'Agriculture soils' = {
+	sourceSinkChemicalPhysicalProcess = 15 ;
+	}
+#Agriculture waste burning
+'Agriculture waste burning' = {
+	sourceSinkChemicalPhysicalProcess = 16 ;
+	}
+#Agriculture (all)
+'Agriculture (all)' = {
+	sourceSinkChemicalPhysicalProcess = 17 ;
+	}
+#Residential, commercial and other combustion
+'Residential, commercial and other combustion' = {
+	sourceSinkChemicalPhysicalProcess = 18 ;
+	}
+#Power generation
+'Power generation' = {
+	sourceSinkChemicalPhysicalProcess = 19 ;
+	}
+#Super power stations
+'Super power stations' = {
+	sourceSinkChemicalPhysicalProcess = 20 ;
+	}
+#Fugitives
+'Fugitives' = {
+	sourceSinkChemicalPhysicalProcess = 21 ;
+	}
+#Industrial process
+'Industrial process' = {
+	sourceSinkChemicalPhysicalProcess = 22 ;
+	}
+#Solvents
+'Solvents' = {
+	sourceSinkChemicalPhysicalProcess = 23 ;
+	}
+#Ships
+'Ships' = {
+	sourceSinkChemicalPhysicalProcess = 24 ;
+	}
+#Wastes (solid and water)
+'Wastes (solid and water)' = {
+	sourceSinkChemicalPhysicalProcess = 25 ;
+	}
+#Road transportation
+'Road transportation' = {
+	sourceSinkChemicalPhysicalProcess = 26 ;
+	}
+#Off-road transportation
+'Off-road transportation' = {
+	sourceSinkChemicalPhysicalProcess = 27 ;
+	}

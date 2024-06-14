@@ -1813,3 +1813,33 @@
  parameterCategory = 200 ;
  parameterNumber = 203 ;
 }
+#Emission mass flux from vegetation
+'Emission mass flux from vegetation' = {
+ discipline = 192 ;
+ parameterCategory = 412 ;
+ parameterNumber = 0 ;
+}
+#Emission mass flux from biomass burning
+'Emission mass flux from biomass burning' = {
+ discipline = 192 ;
+ parameterCategory = 417 ;
+ parameterNumber = 0 ;
+}
+#Emission mass flux from settlements
+'Emission mass flux from settlements' = {
+ discipline = 192 ;
+ parameterCategory = 432 ;
+ parameterNumber = 0 ;
+}
+#Emission mass flux from soil
+'Emission mass flux from soil' = {
+ discipline = 192 ;
+ parameterCategory = 442 ;
+ parameterNumber = 0 ;
+}
+#Emission mass flux from wild animals
+'Emission mass flux from wild animals' = {
+ discipline = 192 ;
+ parameterCategory = 443 ;
+ parameterNumber = 0 ;
+}

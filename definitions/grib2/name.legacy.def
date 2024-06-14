@@ -180,3 +180,201 @@
  parameterCategory = 0 ;
  parameterNumber = 24 ;
 }
+#Emission mass flux
+'Emission mass flux' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 255 ;
+}
+#Emission mass flux from natural sources
+'Emission mass flux from natural sources' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 6 ;
+}
+#Emission mass flux from anthropogenic sources
+'Emission mass flux from anthropogenic sources' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 4 ;
+}
+#Emission mass flux from elevated anthropogenic sources
+'Emission mass flux from elevated anthropogenic sources' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 12 ;
+}
+#Emission mass flux from surface anthropogenic sources
+'Emission mass flux from surface anthropogenic sources' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 13 ;
+}
+#Emission from aviation
+'Emission from aviation' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 1 ;
+}
+#Emission mass flux from agriculture livestock
+'Emission mass flux from agriculture livestock' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 14 ;
+}
+#Emission mass flux from agriculture soils
+'Emission mass flux from agriculture soils' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 15 ;
+}
+#Emission mass flux from agricultural waste burning
+'Emission mass flux from agricultural waste burning' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 16 ;
+}
+#Emission mass flux from residential, commercial and other combustion
+'Emission mass flux from residential, commercial and other combustion' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 18 ;
+}
+#Emission mass flux from power generation
+'Emission mass flux from power generation' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 19 ;
+}
+#Emission mass flux from fugitives
+'Emission mass flux from fugitives' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 21 ;
+}
+#Emission mass flux from industrial process
+'Emission mass flux from industrial process' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 22 ;
+}
+#Emission mass flux from solvents
+'Emission mass flux from solvents' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 23 ;
+}
+#Emission mass flux from ships
+'Emission mass flux from ships' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 24 ;
+}
+#Emission mass flux from wastes (solid and water)
+'Emission mass flux from wastes (solid and water)' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 25 ;
+}
+#Emission mass flux from off-road transportation
+'Emission mass flux from off-road transportation' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 27 ;
+}
+#Emission mass flux from road transportation
+'Emission mass flux from road transportation' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 26 ;
+}
+#Emission mass flux from super power stations
+'Emission mass flux from super power stations' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 20 ;
+}
+#Emission mass flux from volcanoes
+'Emission mass flux from volcanoes' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Emission mass flux from wetlands
+'Emission mass flux from wetlands' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 10 ;
+}
+#Emission mass flux from bio fuel
+'Emission mass flux from bio fuel' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 8 ;
+}
+#Emission mass flux from fossil fuel
+'Emission mass flux from fossil fuel' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 9 ;
+}
+#Emission mass flux from other
+'Emission mass flux from other' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 0 ;
+}
+#Emission mass flux from oceans
+'Emission mass flux from oceans' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 77 ;
+ sourceSinkChemicalPhysicalProcess = 11 ;
+}
+#Mass mixing ratio from volcanoes
+'Mass mixing ratio from volcanoes' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 2 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Total column vertically-integrated mass density from volcanoes
+'Total column vertically-integrated mass density from volcanoes' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 1 ;
+ typeOfFirstFixedSurface = 1 ;
+ typeOfSecondFixedSurface = 8 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}
+#Dry deposition velocity from volcanoes
+'Dry deposition velocity from volcanoes' = {
+ discipline = 0 ;
+ parameterCategory = 20 ;
+ parameterNumber = 15 ;
+ sourceSinkChemicalPhysicalProcess = 7 ;
+}

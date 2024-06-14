@@ -14081,30 +14081,6 @@
 	 parameterCategory = 20 ;
 	 parameterNumber = 195 ;
 	}
-#Emission mass flux from vegetation
-'emi_mflx_veg' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 192 ;
-	}
-#Emission mass flux from biomass burning
-'emi_mflx_biomburn' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 193 ;
-	}
-#Emission mass flux from settlements
-'emi_mflx_settl' = {
-	 localTablesVersion = 1 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 194 ;
-	}
 #Emission mass flux from soil
 'emi_mflx_soil' = {
 	 localTablesVersion = 1 ;
@@ -14148,22 +14124,6 @@
 	 discipline = 0 ;
 	 parameterCategory = 20 ;
 	 parameterNumber = 195 ;
-	}
-#Emission mass flux from vegetation
-'emi_mflx_veg' = {
-	 localTablesVersion = 2 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 192 ;
-	}
-#Emission mass flux from biomass burning
-'emi_mflx_biomburn' = {
-	 localTablesVersion = 2 ;
-	 discipline = 0 ;
-	 parameterCategory = 20 ;
-	 parameterNumber = 77 ;
-	 sourceSinkChemicalPhysicalProcess = 193 ;
 	}
 #Emission mass flux from settlements
 'emi_mflx_settl' = {
