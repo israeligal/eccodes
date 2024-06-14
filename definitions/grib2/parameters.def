@@ -44,7 +44,7 @@ else {
 }
 
 if (tablesVersion >= 31 ) {
-  concept chemId (zero,"chemId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
+  concept chemId (unknown,"chemId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
   concept chemName (unknown,"chemName.def",conceptsDir2,conceptsDir1): no_copy,dump;
   concept chemShortName (unknown,"chemShortName.def",conceptsDir2,conceptsDir1): no_copy,dump;
   concept chemFormula (unknown,"chemFormula.def",conceptsDir2,conceptsDir1): no_copy,dump;
@@ -58,7 +58,7 @@ if (tablesVersion >= 31 ) {
 }
 
 if (tablesVersion >= 31 ) {
- concept srcSinkId (zero,"srcSinkId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
+ concept srcSinkId (unknown,"srcSinkId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
  concept srcSinkName (unknown,"srcSinkName.def",conceptsDir2,conceptsDir1): no_copy,dump;
  concept srcSinkShortName (unknown,"srcSinkShortName.def",conceptsDir2,conceptsDir1): no_copy,dump;
 
