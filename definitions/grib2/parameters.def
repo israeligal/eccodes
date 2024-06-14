@@ -57,15 +57,17 @@ if (tablesVersion >= 31 ) {
   }
 }
 
-concept srcSinkId (unknown,"srcSinkId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
-concept srcSinkName (unknown,"srcSinkName.def",conceptsDir2,conceptsDir1): no_copy,dump;
-concept srcSinkShortName (unknown,"srcSinkShortName.def",conceptsDir2,conceptsDir1): no_copy,dump;
+if (tablesVersion >= 31 ) {
+ concept srcSinkId (zero,"srcSinkId.def",conceptsDir2,conceptsDir1): no_copy,long_type,dump;
+ concept srcSinkName (unknown,"srcSinkName.def",conceptsDir2,conceptsDir1): no_copy,dump;
+ concept srcSinkShortName (unknown,"srcSinkShortName.def",conceptsDir2,conceptsDir1): no_copy,dump;
 
-if ( !(srcSinkId is "unknown") ) {
- alias mars.srcSink = srcSinkId;
- alias parameter.srcSinkId = srcSinkId;
- alias ls.srcSinkShortName = srcSinkShortName;
- alias parameter.srcSinkShortName = srcSinkShortName;
+ if ( !(srcSinkId is "unknown") ) {
+  alias mars.srcSink = srcSinkId;
+  alias parameter.srcSinkId = srcSinkId;
+  alias ls.srcSinkShortName = srcSinkShortName;
+  alias parameter.srcSinkShortName = srcSinkShortName;
+ }
 }
 
 template_nofail names "grib2/products_[productionStatusOfProcessedData].def";
