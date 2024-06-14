@@ -23,3 +23,23 @@
 	localTablesVersion = 1 ;
 	sourceSinkChemicalPhysicalProcess = 196 ;
 	}
+#Commercial buildings heating
+'Commercial buildings heating' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 197 ;
+	}
+#Residential heating
+'Residential heating' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 198 ;
+	}
+#Oil refineries and transformation industry
+'Oil refineries and transformation industry' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 199 ;
+	}
+#Gas production
+'Gas production' = {
+	localTablesVersion = 1 ;
+	sourceSinkChemicalPhysicalProcess = 200 ;
+	}
