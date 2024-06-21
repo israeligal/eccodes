@@ -194,13 +194,13 @@
 	 parameterNumber = 54 ;
 	}
 #Type of low vegetation
-'(code table 4.234)' = {
+'(Code table 4.234)' = {
 	 discipline = 2 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 57 ;
 	}
 #Type of high vegetation
-'(code table 4.234)' = {
+'(Code table 4.234)' = {
 	 discipline = 2 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 58 ;
@@ -226,7 +226,7 @@
 	 typeOfFirstFixedSurface = 1 ;
 	}
 #Soil type
-'~' = {
+'(Code table 4.213)' = {
 	 discipline = 2 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 0 ;
@@ -3377,7 +3377,7 @@
 	 parameterNumber = 45 ;
 	}
 #Wetland type
-'Code table 4.239' = {
+'(Code table 4.239)' = {
 	 discipline = 2 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 46 ;
@@ -4916,6 +4916,27 @@
 	 parameterNumber = 18 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
+#Time-mean wind speed
+'m s**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 1 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean pressure
+'Pa' = {
+	 discipline = 0 ;
+	 parameterCategory = 3 ;
+	 parameterNumber = 0 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean potential vorticity
+'K m**2 kg**-1 s**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 14 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
 #Time-mean specific rain water content
 'kg kg**-1' = {
 	 discipline = 0 ;
@@ -5136,6 +5157,13 @@
 	 parameterNumber = 4 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
+#Time-mean clear air turbulence (CAT)
+'m**2/3 s**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 19 ;
+	 parameterNumber = 29 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
 #Time-mean discharge from rivers or streams
 'm**3 s**-1' = {
 	 discipline = 1 ;
@@ -5169,6 +5197,76 @@
 	 typeOfFirstFixedSurface = 151 ;
 	 typeOfSecondFixedSurface = 151 ;
 	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean floodplain depth
+'m' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 17 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean floodplain flooded fraction
+'Proportion' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 18 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean floodplain flooded area
+'m**2' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 19 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean river fraction
+'Proportion' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 20 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean river area
+'m**2' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 21 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean fraction of river coverage plus river related flooding
+'Proportion' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 22 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-mean area of river coverage plus river related flooding
+'m**2' = {
+	 discipline = 1 ;
+	 parameterCategory = 2 ;
+	 parameterNumber = 23 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
+#Time-maximum volumetric soil moisture
+'m**3 m**-3' = {
+	 discipline = 2 ;
+	 parameterCategory = 0 ;
+	 parameterNumber = 25 ;
+	 typeOfStatisticalProcessing = 2 ;
+	}
+#Time-minimum volumetric soil moisture
+'m**3 m**-3' = {
+	 discipline = 2 ;
+	 parameterCategory = 0 ;
+	 parameterNumber = 25 ;
+	 typeOfStatisticalProcessing = 3 ;
+	}
+#Time-standard-deviation volumetric soil moisture
+'m**3 m**-3' = {
+	 discipline = 2 ;
+	 parameterCategory = 0 ;
+	 parameterNumber = 25 ;
+	 typeOfStatisticalProcessing = 6 ;
 	}
 #Cross sectional area of flow in channel
 'm**2' = {
@@ -5503,7 +5601,7 @@
 	 parameterNumber = 18 ;
 	}
 #Precipitation type
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -5571,7 +5669,7 @@
 	 typeOfStatisticalProcessing = 1 ;
 	}
 #Precipitable water category
-'code table (4.202)' = {
+'(Code table 4.202)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 30 ;
@@ -5988,7 +6086,7 @@
 	 parameterNumber = 7 ;
 	}
 #Cloud type
-'code table (4.203)' = {
+'(Code table 4.203)' = {
 	 discipline = 0 ;
 	 parameterCategory = 6 ;
 	 parameterNumber = 8 ;
@@ -6000,7 +6098,7 @@
 	 parameterNumber = 9 ;
 	}
 #Thunderstorm coverage
-'code table (4.204)' = {
+'(Code table 4.204)' = {
 	 discipline = 0 ;
 	 parameterCategory = 6 ;
 	 parameterNumber = 10 ;
@@ -6132,7 +6230,7 @@
 	 parameterNumber = 11 ;
 	}
 #Aerosol type
-'code table (4.205)' = {
+'(Code table 4.205)' = {
 	 discipline = 0 ;
 	 parameterCategory = 13 ;
 	 parameterNumber = 0 ;
@@ -6242,7 +6340,7 @@
 	 parameterNumber = 8 ;
 	}
 #Volcanic ash
-'code table (4.206)' = {
+'(Code table 4.206)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 4 ;
@@ -6260,7 +6358,7 @@
 	 parameterNumber = 6 ;
 	}
 #Icing
-'code table (4.207)' = {
+'(Code table 4.207)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 7 ;
@@ -6278,7 +6376,7 @@
 	 parameterNumber = 9 ;
 	}
 #Turbulence
-'code table (4.208)' = {
+'(Code table 4.208)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 10 ;
@@ -6290,19 +6388,19 @@
 	 parameterNumber = 11 ;
 	}
 #Planetary boundary layer regime
-'code table (4.209)' = {
+'(Code table 4.209)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 12 ;
 	}
 #Contrail intensity
-'code table (4.210)' = {
+'(Code table 4.210)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 13 ;
 	}
 #Contrail engine type
-'code table (4.211)' = {
+'(Code table 4.211)' = {
 	 discipline = 0 ;
 	 parameterCategory = 19 ;
 	 parameterNumber = 14 ;
@@ -6380,13 +6478,13 @@
 	 parameterNumber = 1 ;
 	}
 #Remotely sensed snow cover
-'(code table 4.215)' = {
+'(Code table 4.215)' = {
 	 discipline = 1 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 2 ;
 	}
 #Elevation of snow covered terrain
-'(code table 4.216)' = {
+'(Code table 4.216)' = {
 	 discipline = 1 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 3 ;
@@ -6452,7 +6550,7 @@
 	 parameterNumber = 7 ;
 	}
 #Land use
-'code table (4.212)' = {
+'(Code table 4.212)' = {
 	 discipline = 2 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 8 ;
@@ -6620,7 +6718,7 @@
 	 parameterNumber = 2 ;
 	}
 #Cloud top height quality indicator
-'Code table 4.219' = {
+'(Code table 4.219)' = {
 	 discipline = 3 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 3 ;
@@ -6826,7 +6924,7 @@
 	 parameterNumber = 0 ;
 	}
 #Precipitation type (most severe) in the last 1 hour
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -6835,7 +6933,7 @@
 	 lengthOfTimeRange = 1 ;
 	}
 #Precipitation type (most severe) in the last 3 hours
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -6844,7 +6942,7 @@
 	 lengthOfTimeRange = 3 ;
 	}
 #Precipitation type (most frequent) in the last 1 hour
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -6853,7 +6951,7 @@
 	 lengthOfTimeRange = 1 ;
 	}
 #Precipitation type (most frequent) in the last 3 hours
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -6862,7 +6960,7 @@
 	 lengthOfTimeRange = 3 ;
 	}
 #Precipitation type (most severe) in the last 6 hours
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -6871,7 +6969,7 @@
 	 lengthOfTimeRange = 6 ;
 	}
 #Precipitation type (most frequent) in the last 6 hours
-'code table (4.201)' = {
+'(Code table 4.201)' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
 	 parameterNumber = 19 ;
@@ -7047,19 +7145,19 @@
 	 parameterNumber = 6 ;
 	}
 #Cloud mask
-'Code table 4.217' = {
+'(Code table 4.217)' = {
 	 discipline = 3 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 7 ;
 	}
 #Pixel scene type
-'Code table 4.218' = {
+'(Code table 4.218)' = {
 	 discipline = 3 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 8 ;
 	}
 #Fire detection indicator
-'Code table 4.223' = {
+'(Code table 4.223)' = {
 	 discipline = 3 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 9 ;
@@ -7730,12 +7828,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 3 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Sea surface temperature
 'K' = {
@@ -7826,36 +7918,18 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 4 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Northward surface stress
 'N m**-2' = {
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 6 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Eastward surface stress
 'N m**-2' = {
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 5 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Y-component of surface stress
 'N m**-2' = {
@@ -8018,12 +8092,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 1 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Steric change in sea surface height
 'm' = {
@@ -8198,24 +8266,12 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 15 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Eastward surface sea water velocity
 'm s**-1' = {
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 14 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Heat Content surface to 26C isotherm
 'J m**-2' = {
@@ -8264,12 +8320,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 21 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	}
 #Vertically integrated sea water practical salinity in the upper 300 m
 'g kg**-1 m' = {
@@ -8857,12 +8907,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 3 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean sea surface temperature
@@ -8961,12 +9005,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 4 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean northward surface stress
@@ -8974,12 +9012,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 6 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean eastward surface stress
@@ -8987,12 +9019,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 5 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time mean Y-component of surface stress
@@ -9169,12 +9195,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 1 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean steric change in sea surface height
@@ -9364,12 +9384,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 15 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean eastward surface sea water velocity
@@ -9377,12 +9391,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 14 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean heat content surface to 26C isotherm
@@ -9436,12 +9444,6 @@
 	 discipline = 10 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 21 ;
-	 typeOfFirstFixedSurface = 160 ;
-	 typeOfSecondFixedSurface = 255 ;
-	 scaledValueOfFirstFixedSurface = 0 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 scaledValueOfSecondFixedSurface = missing() ;
-	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean vertically integrated sea water practical salinity in the upper 300 m
@@ -10180,6 +10182,44 @@
 	 parameterNumber = 15 ;
 	 is_chemical_srcsink = 1 ;
 	 sourceSinkChemicalPhysicalProcess = 7 ;
+	}
+#Aerosol optical depth
+'Numeric' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 102 ;
+	}
+#Single scattering albedo
+'(0 - 1)' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 103 ;
+	}
+#Asymmetry Factor
+'Numeric' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 104 ;
+	}
+#Aerosol backscatter from top of atmosphere
+'m**-1 sr**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 107 ;
+	 typeOfFirstFixedSurface = 8 ;
+	}
+#Aerosol backscatter from ground
+'m**-1 sr**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 108 ;
+	 typeOfFirstFixedSurface = 1 ;
+	}
+#Aerosol extinction coefficient
+'m**-1' = {
+	 discipline = 0 ;
+	 parameterCategory = 20 ;
+	 parameterNumber = 105 ;
 	}
 #Pressure tendency
 'Pa s**-1' = {
