@@ -6,6 +6,9 @@ configure_file( include.ctest.sh.in  include.ctest.sh @ONLY )
 execute_process( COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/utils.sh   ${CMAKE_CURRENT_BINARY_DIR} )
 execute_process( COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/number_compare.pl ${CMAKE_CURRENT_BINARY_DIR} )
 
+# Unit tests
+add_subdirectory(unit)
+
 # Build the executables used by test scripts
 ################################################
 list(APPEND test_c_bins
@@ -79,15 +82,6 @@ foreach( tool ${test_c_bins} )
                             SOURCES   ${tool}.cc
                             LIBS      eccodes )
 endforeach()
-
-
-# Unit tests
-
-ecbuild_add_test( TARGET  eccodes_t_gribspec
-                  SOURCES gribspec.cc
-                  LIBS    eccodes
-                  ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/../samples/reduced_gg_sfc_grib2.tmpl
-                          ${CMAKE_CURRENT_SOURCE_DIR}/reduced_gg_sfc_grib2.tmpl.json )
 
 
 # Now add each test (shell scripts)
