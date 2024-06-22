@@ -9,6 +9,9 @@ execute_process( COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_S
 # Unit tests
 add_subdirectory(unit)
 
+# Spec tests
+add_subdirectory(spec)
+
 # Build the executables used by test scripts
 ################################################
 list(APPEND test_c_bins
