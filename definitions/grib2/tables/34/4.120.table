@@ -1,0 +1,16 @@
+# 4.120 verification scores
+0 0 Mean error
+1 1 Root mean squared error
+2 2 Continuous ranked probability score (CRPS)
+3 3 Fair continuous ranked probability score
+4 4 Continuous logarithmic ignorance score
+5 5 Fair continuous logarithmic ignorance score
+6 6 Ranked probability score
+7 7 Contingency Table Hits (deterministic)
+8 8 Contingency Table False alarms (deterministic)
+9 9 Contingency Table Misses (deterministic)
+10 10 Contingency Table Correct negatives (deterministic)
+# for 11 and 12 use ensembleMember to specify how many ensemble members fulfill the criteria
+11 11 Contingency Table Forecast-by-n-members and observed (probabilistic)
+12 12 Contingency Table Forecast-by-n-members and not observed (probabilistic)
+65535 65535 Missing

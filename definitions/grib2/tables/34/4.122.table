@@ -1,0 +1,4 @@
+# 4.122 Kind of additional arguments for verification score
+1 1 Fixed threshold value
+2 2 Threshold specified by a quantile of the climatology
+3 3 Threshold specified as anomaly of standard deviations of the climatology

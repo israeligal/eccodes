@@ -1,0 +1,5 @@
+# 4.119 Additional specification of verified parameter
+0 0 Parameter from numerical model
+1 1 Parameter from numerical model  as an anomaly
+2 2 Parameter bias corrected
+3 3 Parameter statically post-processed
