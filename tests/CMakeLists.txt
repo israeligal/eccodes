@@ -236,9 +236,6 @@ if( HAVE_BUILD_TOOLS )
         grib_geo_iter
         grib_to_json
         grib_to_ppm
-        grib_merge
-        big2gribex
-        grib_sub_area_check
         grib_list_keys
         grib_histogram
         bufr_get_element
@@ -285,6 +282,7 @@ if( HAVE_BUILD_TOOLS )
         grib_ecc-1467
         grib_ecc-1764
         grib_ecc-1792
+        grib_ecc-1846
         grib_sub_hourly
         grib_set_bytes
         grib_set_force
