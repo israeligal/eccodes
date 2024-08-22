@@ -7777,15 +7777,6 @@
 	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
-#Time-mean total cloud cover
-'avg_tcc' = {
-	 discipline = 0 ;
-	 parameterCategory = 6 ;
-	 parameterNumber = 1 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfSecondFixedSurface = 8 ;
-	 typeOfStatisticalProcessing = 0 ;
-	}
 #Time-mean skin reservoir content
 'avg_srcon' = {
 	 discipline = 2 ;
@@ -8090,15 +8081,6 @@
 	 discipline = 0 ;
 	 parameterCategory = 3 ;
 	 parameterNumber = 45 ;
-	 typeOfStatisticalProcessing = 0 ;
-	}
-#Time-mean total lightning flash density
-'avg_litoti' = {
-	 discipline = 0 ;
-	 parameterCategory = 17 ;
-	 parameterNumber = 4 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
 #Time-mean total column supercooled liquid water
@@ -8939,14 +8921,6 @@
 	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 2 ;
 	}
-#Time-maximum total precipitation rate
-'max_tprate' = {
-	 discipline = 0 ;
-	 parameterCategory = 1 ;
-	 parameterNumber = 52 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfStatisticalProcessing = 2 ;
-	}
 #Time-maximum convective snowfall rate water equivalent
 'max_csfr' = {
 	 discipline = 0 ;
@@ -9389,16 +9363,6 @@
 	 scaleFactorOfFirstFixedSurface = 0 ;
 	 typeOfStatisticalProcessing = 2 ;
 	}
-#Time-maximum 2 metre temperature
-'max_2t' = {
-	 discipline = 0 ;
-	 parameterCategory = 0 ;
-	 parameterNumber = 0 ;
-	 typeOfFirstFixedSurface = 103 ;
-	 scaledValueOfFirstFixedSurface = 2 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 typeOfStatisticalProcessing = 2 ;
-	}
 #Time-maximum 2 metre dewpoint temperature
 'max_2d' = {
 	 discipline = 0 ;
@@ -9567,15 +9531,6 @@
 	 discipline = 0 ;
 	 parameterCategory = 2 ;
 	 parameterNumber = 6 ;
-	 typeOfStatisticalProcessing = 2 ;
-	}
-#Time-maximum convective available potential energy
-'max_cape' = {
-	 discipline = 0 ;
-	 parameterCategory = 7 ;
-	 parameterNumber = 6 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 2 ;
 	}
 #Time-maximum total cloud cover
@@ -9827,16 +9782,6 @@
 	 scaleFactorOfFirstFixedSurface = 2 ;
 	 typeOfStatisticalProcessing = 2 ;
 	}
-#Time-maximum 10 metre wind gust
-'max_i10fg' = {
-	 discipline = 0 ;
-	 parameterCategory = 2 ;
-	 parameterNumber = 22 ;
-	 typeOfFirstFixedSurface = 103 ;
-	 scaledValueOfFirstFixedSurface = 10 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 typeOfStatisticalProcessing = 2 ;
-	}
 #Time-maximum relative humidity with respect to water
 'max_rhw' = {
 	 discipline = 0 ;
@@ -9852,15 +9797,6 @@
 	 typeOfFirstFixedSurface = 103 ;
 	 scaledValueOfFirstFixedSurface = 2 ;
 	 scaleFactorOfFirstFixedSurface = 0 ;
-	 typeOfStatisticalProcessing = 2 ;
-	}
-#Time-maximum convective available potential energy shear
-'max_capes' = {
-	 discipline = 0 ;
-	 parameterCategory = 7 ;
-	 parameterNumber = 19 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 2 ;
 	}
 #Time-maximum tropopause pressure
@@ -10740,14 +10676,6 @@
 	 typeOfSecondFixedSurface = 8 ;
 	 typeOfStatisticalProcessing = 3 ;
 	}
-#Time-minimum total precipitation rate
-'min_tprate' = {
-	 discipline = 0 ;
-	 parameterCategory = 1 ;
-	 parameterNumber = 52 ;
-	 typeOfFirstFixedSurface = 1 ;
-	 typeOfStatisticalProcessing = 3 ;
-	}
 #Time-minimum convective snowfall rate water equivalent
 'min_csfr' = {
 	 discipline = 0 ;
@@ -11187,16 +11115,6 @@
 	 parameterNumber = 3 ;
 	 typeOfFirstFixedSurface = 103 ;
 	 scaledValueOfFirstFixedSurface = 10 ;
-	 scaleFactorOfFirstFixedSurface = 0 ;
-	 typeOfStatisticalProcessing = 3 ;
-	}
-#Time-minimum 2 metre temperature
-'min_2t' = {
-	 discipline = 0 ;
-	 parameterCategory = 0 ;
-	 parameterNumber = 0 ;
-	 typeOfFirstFixedSurface = 103 ;
-	 scaledValueOfFirstFixedSurface = 2 ;
 	 scaleFactorOfFirstFixedSurface = 0 ;
 	 typeOfStatisticalProcessing = 3 ;
 	}
