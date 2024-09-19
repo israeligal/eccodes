@@ -47,7 +47,6 @@ foreach( _tool
          grib_histogram
          grib_index_build
          grib_ls
-         grib_merge
          grib_set
          gts_compare
          gts_copy
@@ -126,6 +125,19 @@ else()
     ecbuild_info("ECCODES_INSTALL_EXTRA_TOOLS disabled")
 endif()
 ########################################
+
+configure_file( codes_config.in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/codes_config @ONLY )
+file(COPY ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/codes_config
+  DESTINATION ${CMAKE_BINARY_DIR}/bin
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
+  GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install( FILES ${CMAKE_BINARY_DIR}/bin/codes_config
+         DESTINATION ${INSTALL_BIN_DIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                     GROUP_EXECUTE GROUP_READ
+                     WORLD_EXECUTE WORLD_READ )
+
 
 # BUFR compare script
 install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/bufr_compare_dir

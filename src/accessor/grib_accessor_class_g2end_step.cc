@@ -309,7 +309,7 @@ static int unpack_multiple_time_ranges_double_(grib_accessor* a, double* val, si
             long the_coded_unit       = arr_coded_unit[i];
             long the_coded_time_range = arr_coded_time_range[i];
 
-            eccodes::Step time_range{ the_coded_unit, the_coded_time_range };
+            eccodes::Step time_range{the_coded_time_range, the_coded_unit};
             *val = (start_step + time_range).value<double>(eccodes::Unit(step_units));
 
             return GRIB_SUCCESS;
@@ -413,8 +413,8 @@ int grib_accessor_class_g2end_step_t::unpack_double(grib_accessor* a, double* va
 static int pack_long_(grib_accessor* a, const long end_step_value, const long end_step_unit)
 {
     grib_accessor_g2end_step_t* self = (grib_accessor_g2end_step_t*)a;
-    grib_handle* h                   = grib_handle_of_accessor(a);
-    int err                          = 0;
+    grib_handle* h = grib_handle_of_accessor(a);
+    int err = 0;
 
     long year;
     long month;
@@ -489,6 +489,13 @@ static int pack_long_(grib_accessor* a, const long end_step_value, const long en
                          end_step.value<std::string>("%g", show_units_for_hours).c_str(),
                          start_step.value<std::string>("%g", show_units_for_hours).c_str());
         return GRIB_WRONG_STEP;
+    }
+
+    if (!is_date_valid(year, month, day, hour, minute, second)) { // ECC-1866
+        grib_context_log(h->context, GRIB_LOG_ERROR, "%s:%s: Date/Time is not valid! "
+                        "year=%ld month=%ld day=%ld hour=%ld minute=%ld second=%ld",
+                        a->cclass->name, __func__, year, month, day, hour, minute, second);
+        return GRIB_DECODING_ERROR;
     }
 
     err = grib_datetime_to_julian(year, month, day, hour, minute, second, &dend);

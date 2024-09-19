@@ -105,7 +105,8 @@ if( indicatorOfTypeOfLevel == 109 ||
     indicatorOfTypeOfLevel == 100 ||
     indicatorOfTypeOfLevel == 110 ||
     indicatorOfTypeOfLevel == 113 ||
-    indicatorOfTypeOfLevel == 117)
+    indicatorOfTypeOfLevel == 117 ||
+    indicatorOfTypeOfLevel == 203)
 {
     alias mars.levelist = level;
 }
@@ -158,8 +159,11 @@ concept paramId (paramIdECMF,"paramId.def",conceptsDir2,conceptsDir1): long_type
 concept cfNameECMF(defaultName,"cfName.def",conceptsMasterDir,conceptsLocalDirECMF) : no_copy,read_only;
 concept cfName(cfNameECMF,"cfName.def",conceptsDir2,conceptsDir1) : dump,no_copy,read_only;
 
-concept cfVarNameECMF(defaultName,"cfVarName.def",conceptsMasterDir,conceptsLocalDirECMF) : no_copy,read_only;
-concept cfVarName(cfVarNameECMF,"cfVarName.def",conceptsDir2,conceptsDir1) : dump,no_copy,read_only;
+#concept cfVarNameECMF(defaultName,"cfVarName.def",conceptsMasterDir,conceptsLocalDirECMF) : no_copy,read_only;
+#concept cfVarName(cfVarNameECMF,"cfVarName.def",conceptsDir2,conceptsDir1) : dump,no_copy,read_only;
+# See ECC-1886
+meta defaultCfVarName cf_var_name(shortName) : hidden, read_only;
+concept cfVarName(defaultCfVarName,"cfVarName.def",conceptsDir2,conceptsDir1) : dump,no_copy,read_only;
 
 concept unitsECMF(defaultName,"units.def",conceptsMasterDir,conceptsLocalDirECMF) : no_copy,read_only;
 concept units(unitsECMF,"units.def",conceptsDir2,conceptsDir1) : dump,no_copy,read_only;
