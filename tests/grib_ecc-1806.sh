@@ -45,7 +45,7 @@ test_conversion 151145 262124 zos
 test_conversion 130232 235135 avg_w
 test_conversion 172146 235033 avg_ishf
 test_conversion 172147 235034 avg_slhtf
-test_conversion 55     228004 mean2t
+test_conversion 55     228004 avg_2t
 test_conversion 56     235168 avg_2d
 test_conversion 172169 235035 avg_sdswrf
 test_conversion 172175 235036 avg_sdlwrf
