@@ -19924,8 +19924,8 @@
 	 parameterCategory = 0 ;
 	 parameterNumber = 17 ;
 	}
-#Mean 2 metre temperature
-'mean2t' = {
+#Time-mean 2 metre temperature
+'avg_2t' = {
 	 discipline = 0 ;
 	 parameterCategory = 0 ;
 	 parameterNumber = 0 ;
@@ -19934,8 +19934,8 @@
 	 scaleFactorOfFirstFixedSurface = 0 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
-#Mean of 10 metre wind speed
-'mean10ws' = {
+#Time-mean 10 metre wind speed
+'avg_10ws' = {
 	 discipline = 0 ;
 	 parameterCategory = 2 ;
 	 parameterNumber = 1 ;
