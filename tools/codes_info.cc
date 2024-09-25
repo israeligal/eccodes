@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
         printf("\n");
         printf("%s Version %d.%d.%d", grib_get_package_name(), major, minor, revision);
 
-        if (ECCODES_MAJOR_VERSION < 1)
+        
             printf(" PRE-RELEASE");
 
         printf("\n");

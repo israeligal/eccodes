@@ -513,7 +513,8 @@ ecbuild_print_summary()
 
 ecbuild_info("")
 ecbuild_info("   +--------------------------+")
-ecbuild_info("   |  ecCodes version ${eccodes_VERSION}  |")
+ecbuild_info("   |  ecCodes version ${eccodes_VERSION} |")
+ecbuild_info("   |  PRE-RELEASE CANDIDATE   |")
 ecbuild_info("   +--------------------------+")
 ecbuild_info("")
 
