@@ -10494,8 +10494,8 @@
 	 table2Version = 235 ;
 	 indicatorOfParameter = 56 ;
 	}
-#Time-mean large-scale snowfall rate water equivalent
-'Time-mean large-scale snowfall rate water equivalent' = {
+#Time-mean large scale snowfall rate water equivalent
+'Time-mean large scale snowfall rate water equivalent' = {
 	 table2Version = 235 ;
 	 indicatorOfParameter = 57 ;
 	}
@@ -17419,13 +17419,13 @@
 	 table2Version = 228 ;
 	 indicatorOfParameter = 3 ;
 	}
-#Mean 2 metre temperature
-'Mean 2 metre temperature' = {
+#Time-mean 2 metre temperature
+'Time-mean 2 metre temperature' = {
 	 table2Version = 228 ;
 	 indicatorOfParameter = 4 ;
 	}
-#Mean of 10 metre wind speed
-'Mean of 10 metre wind speed' = {
+#Time-mean 10 metre wind speed
+'Time-mean 10 metre wind speed' = {
 	 table2Version = 228 ;
 	 indicatorOfParameter = 5 ;
 	}

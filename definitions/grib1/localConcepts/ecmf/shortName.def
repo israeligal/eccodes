@@ -10494,7 +10494,7 @@
 	 table2Version = 235 ;
 	 indicatorOfParameter = 56 ;
 	}
-#Time-mean large-scale snowfall rate water equivalent
+#Time-mean large scale snowfall rate water equivalent
 'avg_lssfr' = {
 	 table2Version = 235 ;
 	 indicatorOfParameter = 57 ;
@@ -17419,13 +17419,13 @@
 	 table2Version = 228 ;
 	 indicatorOfParameter = 3 ;
 	}
-#Mean 2 metre temperature
-'mean2t' = {
+#Time-mean 2 metre temperature
+'avg_2t' = {
 	 table2Version = 228 ;
 	 indicatorOfParameter = 4 ;
 	}
-#Mean of 10 metre wind speed
-'mean10ws' = {
+#Time-mean 10 metre wind speed
+'avg_10ws' = {
 	 table2Version = 228 ;
 	 indicatorOfParameter = 5 ;
 	}

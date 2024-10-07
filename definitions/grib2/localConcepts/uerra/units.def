@@ -388,6 +388,13 @@
 	 scaleFactorOfFirstFixedSurface = 0 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
+#Snow albedo
+'%' = {
+	 discipline = 0 ;
+	 parameterCategory = 19 ;
+	 parameterNumber = 19 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
 #Total column vertically-integrated graupel (snow pellets)
 'kg m**-2' = {
 	 discipline = 0 ;

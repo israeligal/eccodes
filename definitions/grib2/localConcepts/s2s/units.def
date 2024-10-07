@@ -182,6 +182,13 @@
 	 scaleFactorOfSecondFixedSurface = missing() ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
+#Snow albedo
+'%' = {
+	 discipline = 0 ;
+	 parameterCategory = 19 ;
+	 parameterNumber = 19 ;
+	 typeOfStatisticalProcessing = 0 ;
+	}
 #Soil moisture top 20 cm
 'kg m**-3' = {
 	 discipline = 2 ;

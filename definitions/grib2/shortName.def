@@ -6965,7 +6965,7 @@
 	 typeOfFirstFixedSurface = 1 ;
 	 typeOfStatisticalProcessing = 0 ;
 	}
-#Time-mean large-scale snowfall rate water equivalent
+#Time-mean large scale snowfall rate water equivalent
 'avg_lssfr' = {
 	 discipline = 0 ;
 	 parameterCategory = 1 ;
