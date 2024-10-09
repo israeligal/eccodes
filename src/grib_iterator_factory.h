@@ -11,3 +11,4 @@
 { "polar_stereographic", &grib_iterator_class_polar_stereographic, },
 { "regular", &grib_iterator_class_regular, },
 { "space_view", &grib_iterator_class_space_view, },
+{ "unstructured", &grib_iterator_class_unstructured, },

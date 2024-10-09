@@ -11,3 +11,4 @@ extern grib_iterator_class* grib_iterator_class_mercator;
 extern grib_iterator_class* grib_iterator_class_polar_stereographic;
 extern grib_iterator_class* grib_iterator_class_regular;
 extern grib_iterator_class* grib_iterator_class_space_view;
+extern grib_iterator_class* grib_iterator_class_unstructured;

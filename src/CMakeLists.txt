@@ -332,6 +332,7 @@ list( APPEND eccodes_src_files
     grib_nearest_class_polar_stereographic.cc
     grib_nearest_class_space_view.cc
     grib_iterator_class_polar_stereographic.cc
+    grib_iterator_class_unstructured.cc
     grib_iterator_class_lambert_azimuthal_equal_area.cc
     grib_iterator_class_lambert_conformal.cc
     grib_iterator_class_mercator.cc
