@@ -8,8 +8,8 @@
  * virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
  */
 
-#include "grib_api_internal.h"
 #include <cmath>
+#include "grib_api_internal.h"
 
 /*
    This is used by make_class.pl
@@ -36,58 +36,59 @@ or edit "iterator.class" and rerun ./make_class.pl
 */
 
 
-static void init_class        (grib_iterator_class*);
-static int init               (grib_iterator* i,grib_handle*,grib_arguments*);
-static int next               (grib_iterator* i, double *lat, double *lon, double *val);
-static int destroy            (grib_iterator* i);
+static void init_class(grib_iterator_class*);
+static int init(grib_iterator* i, grib_handle*, grib_arguments*);
+static int next(grib_iterator* i, double* lat, double* lon, double* val);
+static int destroy(grib_iterator* i);
 
 
-typedef struct grib_iterator_unstructured{
-  grib_iterator it;
+struct grib_iterator_unstructured {
+    grib_iterator it;
     /* Members defined in gen */
     int carg;
     const char* missingValue;
     /* Members defined in unstructured */
-    double *lats;
-    double *lons;
+    double* lats;
+    double* lons;
     long Nj;
-} grib_iterator_unstructured;
+};
 
 extern grib_iterator_class* grib_iterator_class_gen;
 
 static grib_iterator_class _grib_iterator_class_unstructured = {
-    &grib_iterator_class_gen,                    /* super                     */
-    "unstructured",                    /* name                      */
-    sizeof(grib_iterator_unstructured),/* size of instance          */
-    0,                           /* inited */
-    &init_class,                 /* init_class */
-    &init,                     /* constructor               */
-    &destroy,                  /* destructor                */
-    &next,                     /* Next Value                */
-    0,                 /*  Previous Value           */
-    0,                    /* Reset the counter         */
-    0,                 /* has next values           */
+    &grib_iterator_class_gen,            // super
+    "unstructured",                      // name
+    sizeof(grib_iterator_unstructured),  // size of instance
+    0,                                   // inited
+    &init_class,                         // init_class
+    &init,                               // constructor
+    &destroy,                            // destructor
+    &next,                               // Next Value
+    nullptr,                             //  Previous Value
+    nullptr,                             // Reset the counter
+    nullptr,                             // has next values
 };
 
 grib_iterator_class* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
 
 
-static void init_class(grib_iterator_class* c)
-{
-    c->previous    =    (*(c->super))->previous;
-    c->reset    =    (*(c->super))->reset;
-    c->has_next    =    (*(c->super))->has_next;
+static void init_class(grib_iterator_class* c) {
+    c->previous = (*(c->super))->previous;
+    c->reset    = (*(c->super))->reset;
+    c->has_next = (*(c->super))->has_next;
 }
-/* END_CLASS_IMP */
+
 
 #define ITER "Unstructured grid Geoiterator"
 
-static int next(grib_iterator* iter, double* lat, double* lon, double* val)
-{
-    grib_iterator_unstructured* self = (grib_iterator_unstructured*)iter;
 
-    if ((long)iter->e >= (long)(iter->nv - 1))
+static int next(grib_iterator* iter, double* lat, double* lon, double* val) {
+    auto* self = (grib_iterator_unstructured*)iter;
+
+    if (iter->e >= iter->nv - 1) {
         return 0;
+    }
+
     iter->e++;
 
     *lat = self->lats[iter->e];
@@ -98,40 +99,60 @@ static int next(grib_iterator* iter, double* lat, double* lon, double* val)
     return 1;
 }
 
-static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args)
-{
-    int ret = 0;
-    grib_iterator_unstructured* self = (grib_iterator_unstructured*)iter;
-    long numberOfGridUsed, numberOfGridInReference;
-    char unstructuredGridType[32] = {0,};
-    char unstructuredGridSubtype[32] = {0,};
+
+static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
+    int ret    = 0;
+    auto* self = (grib_iterator_unstructured*)iter;
+
+    long numberOfGridUsed         = 0;
+    long numberOfGridInReference  = 0;
+    char unstructuredGridType[32] = {
+        0,
+    };
+    char unstructuredGridSubtype[32] = {
+        0,
+    };
+    char uuidOfHGrid[32] = {
+        0,
+    };
     size_t slen = 0;
 
-    const char* s_unstructuredGridType    = grib_arguments_get_name(h, args, self->carg++);
-    const char* s_unstructuredGridSubtype = grib_arguments_get_name(h, args, self->carg++);
-    const char* s_numberOfGridUsed        = grib_arguments_get_name(h, args, self->carg++);
-    const char* s_numberOfGridInReference = grib_arguments_get_name(h, args, self->carg++);
-    const char* s_uuidOfHGrid             = grib_arguments_get_name(h, args, self->carg++);
+    const auto* s_unstructuredGridType    = grib_arguments_get_name(h, args, self->carg++);
+    const auto* s_unstructuredGridSubtype = grib_arguments_get_name(h, args, self->carg++);
+    const auto* s_numberOfGridUsed        = grib_arguments_get_name(h, args, self->carg++);
+    const auto* s_numberOfGridInReference = grib_arguments_get_name(h, args, self->carg++);
+    const auto* s_uuidOfHGrid             = grib_arguments_get_name(h, args, self->carg++);
 
     slen = sizeof(unstructuredGridType);
-    if ((ret = grib_get_string_internal(h, s_unstructuredGridType, unstructuredGridType, &slen)) != GRIB_SUCCESS)
+    if ((ret = grib_get_string_internal(h, s_unstructuredGridType, unstructuredGridType, &slen)) != GRIB_SUCCESS) {
         return ret;
+    }
 
     slen = sizeof(unstructuredGridSubtype);
-    if ((ret = grib_get_string_internal(h, s_unstructuredGridSubtype, unstructuredGridSubtype, &slen)) != GRIB_SUCCESS)
+    if ((ret = grib_get_string_internal(h, s_unstructuredGridSubtype, unstructuredGridSubtype, &slen)) !=
+        GRIB_SUCCESS) {
         return ret;
+    }
 
-    if ((ret = grib_get_long_internal(h, s_numberOfGridUsed, &numberOfGridUsed)) != GRIB_SUCCESS)
+    if ((ret = grib_get_long_internal(h, s_numberOfGridUsed, &numberOfGridUsed)) != GRIB_SUCCESS) {
         return ret;
-    if ((ret = grib_get_long_internal(h, s_numberOfGridInReference, &numberOfGridInReference)) != GRIB_SUCCESS)
-        return ret;
+    }
 
-    self->lats = (double*)grib_context_malloc(h->context, iter->nv * sizeof(double));
+    if ((ret = grib_get_long_internal(h, s_numberOfGridInReference, &numberOfGridInReference)) != GRIB_SUCCESS) {
+        return ret;
+    }
+
+    slen = sizeof(uuidOfHGrid);
+    if ((ret = grib_get_string_internal(h, s_uuidOfHGrid, uuidOfHGrid, &slen)) != GRIB_SUCCESS) {
+        return ret;
+    }
+
+    self->lats = static_cast<double*>(grib_context_malloc(h->context, iter->nv * sizeof(double)));
     if (self->lats == nullptr) {
         return GRIB_OUT_OF_MEMORY;
     }
 
-    self->lons = (double*)grib_context_malloc(h->context, iter->nv * sizeof(double));
+    self->lons = static_cast<double*>(grib_context_malloc(h->context, iter->nv * sizeof(double)));
     if (self->lons == nullptr) {
         return GRIB_OUT_OF_MEMORY;
     }
@@ -140,15 +161,14 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args)
     // TODO(mapm)
 
     iter->e = -1;
-    return GRIB_NOT_IMPLEMENTED; // Remove when all is OK
+    return GRIB_NOT_IMPLEMENTED;  // Remove when all is OK
 
-    //return ret;
+    // return ret;
 }
 
-static int destroy(grib_iterator* i)
-{
-    grib_iterator_unstructured* self = (grib_iterator_unstructured*)i;
-    const grib_context* c                   = i->h->context;
+static int destroy(grib_iterator* i) {
+    auto* self            = (grib_iterator_unstructured*)i;
+    const grib_context* c = i->h->context;
 
     grib_context_free(c, self->lats);
     grib_context_free(c, self->lons);
