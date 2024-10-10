@@ -110,7 +110,12 @@ ecbuild_add_option( FEATURE BUILD_TOOLS
 
 ecbuild_add_option( FEATURE GEOGRAPHY
     DESCRIPTION "Support for Geoiterator and nearest neighbour"
+    REQUIRED_PACKAGES eckit
     DEFAULT ON )
+
+if(HAVE_GEOGRAPHY)
+    find_library(ECKIT_GEO_LIB NAMES eckit_geo REQUIRED)
+endif()
 
 ecbuild_add_option( FEATURE JPG
     DESCRIPTION "Support for JPG decoding/encoding"
