@@ -1,5 +1,8 @@
 if(HAVE_GEOGRAPY)
     foreach( _test
+            grid_FESOM
+            grid_ICON
+            grid_ORCA
             grid_healpix
             grid_lambert
             grid_polar_stereographic )
