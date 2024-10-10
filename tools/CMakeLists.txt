@@ -19,86 +19,62 @@ if( EC_OS_NAME MATCHES "windows" )
 endif()
 
 # tools library
-ecbuild_add_library( TARGET       ecc_tools
-                     TYPE         STATIC
+ecbuild_add_library( TARGET    ecc_tools
+                     TYPE      STATIC
                      NOINSTALL
-                     SOURCES      ${ecc_tools_sources}
-                     PRIVATE_LIBS eccodes )
+                     SOURCES   ${ecc_tools_sources}
+                     PRIVATE_LIBS      eccodes )
+
+# tools binaries
+list( APPEND ecc_tools_binaries
+             codes_info codes_count codes_split_file codes_export_resource
+             grib_histogram grib_filter grib_ls grib_dump
+             grib2ppm grib_set grib_get grib_copy
+             grib_compare codes_parser grib_index_build bufr_index_build
+             bufr_ls bufr_dump bufr_set bufr_get
+             bufr_copy bufr_compare
+             gts_get gts_compare gts_copy gts_dump gts_filter gts_ls
+             metar_dump metar_ls metar_compare metar_get metar_filter metar_copy )
+
+list( APPEND ecc_tools_binaries_extra
+             grib_repair
+             grib_to_json
+             grib_check_gaussian_grid
+             bufr_split_by_rdbSubtype )
 
 # Install generic tools
-foreach( _tool
-         bufr_compare
-         bufr_copy
-         bufr_dump
-         bufr_get
-         bufr_index_build
-         bufr_ls
-         bufr_set
-         codes_count
-         codes_info
-         codes_parser
-         codes_split_file
-         grib2ppm
-         grib_compare
-         grib_copy
-         grib_dump
-         grib_filter
-         grib_get
-         grib_histogram
-         grib_index_build
-         grib_ls
-         grib_set
-         gts_compare
-         gts_copy
-         gts_dump
-         gts_filter
-         gts_get
-         gts_ls
-         metar_compare
-         metar_copy
-         metar_dump
-         metar_filter
-         metar_get
-         metar_ls )
-    ecbuild_add_executable( TARGET   ${_tool}
-                            SOURCES  ${_tool}.cc
-                            LIBS     ecc_tools )
-endforeach()
-
-# Install generic tools (depending on eckit::geo)
-foreach( _tool
-         grib_get_data
-         grib_get_data_diff
-         grib_get_gridspec )
-    ecbuild_add_executable( TARGET   ${_tool}
-                            SOURCES  ${_tool}.cc
-                            LIBS     ecc_tools eckit_option eckit_geo )
+foreach( tool ${ecc_tools_binaries} )
+    # here we use the fact that each tool has only one C file that matches its name
+    ecbuild_add_executable( TARGET     ${tool}
+                            SOURCES    ${tool}.cc
+                            LIBS       ecc_tools )
 endforeach()
 
 # Install extra tools
-foreach( _tool
-         big2gribex
-         bufr_split_by_rdbSubtype
-         codes_export_resource
-         gg_sub_area_check
-         grib_check_gaussian_grid
-         grib_repair
-         grib_to_json )
-    ecbuild_add_executable( TARGET     ${_tool}
-                            SOURCES    ${_tool}.cc
+# User must run cmake with -DECCODES_INSTALL_EXTRA_TOOLS=ON
+foreach( tool ${ecc_tools_binaries_extra} )
+    ecbuild_add_executable( TARGET     ${tool}
+                            SOURCES    ${tool}.cc
                             CONDITION  ECCODES_INSTALL_EXTRA_TOOLS
                             LIBS       ecc_tools )
 endforeach()
+
+# Install tools related to the Geoiterator and nearest neighbour search
+if( HAVE_GEOGRAPHY )
+    foreach( tool grib_get_data grib_get_data_diff grib_get_gridspec )
+        ecbuild_add_executable( TARGET  ${tool}
+                                SOURCES ${tool}.cc
+                                LIBS    ecc_tools eckit_option eckit_geo )
+    endforeach()
+endif()
 
 # grib_count/bufr_count etc. Same source code, different executable names
 ecbuild_add_executable( TARGET     grib_count
                         SOURCES    codes_count.cc
                         LIBS       ecc_tools )
-
 ecbuild_add_executable( TARGET     bufr_count
                         SOURCES    codes_count.cc
                         LIBS       ecc_tools )
-
 ecbuild_add_executable( TARGET     gts_count
                         SOURCES    codes_count.cc
                         LIBS       ecc_tools )
@@ -108,6 +84,7 @@ ecbuild_add_executable( TARGET     grib_to_netcdf
                         SOURCES    grib_to_netcdf.cc
                         CONDITION  HAVE_NETCDF
                         LIBS       ecc_tools NetCDF::NetCDF_C )
+
 
 ecbuild_add_executable( TARGET     grib_list_keys
                         SOURCES    list_keys.cc
