@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
                 auto numberOfDataPoints = config.get_long("numberOfDataPoints");
                 ASSERT(N == static_cast<size_t>(numberOfDataPoints));
 
-                auto [lats, lons] = grid->to_latlon();
+                auto [lats, lons] = grid->to_latlons();
                 ASSERT(N == grid->size() && N == lats.size() && N == lons.size());
 
                 std::vector<double> values(N);

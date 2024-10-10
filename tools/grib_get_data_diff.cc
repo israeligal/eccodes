@@ -127,7 +127,7 @@ void GribGetDataDiff::run() {
 
             if (geo) {
                 std::unique_ptr<const eckit::geo::Grid> grid(eckit::geo::GridFactory::build(config));
-                auto [lats, lons] = grid->to_latlon();
+                auto [lats, lons] = grid->to_latlons();
                 ASSERT(lats.size() == lons.size());
 
                 for (auto lat = lats.begin(), lon = lons.begin(); lat != lats.end(); ++lat, ++lon) {
