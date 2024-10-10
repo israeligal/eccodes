@@ -100,61 +100,49 @@ static int next(grib_iterator* iter, double* lat, double* lon, double* val)
 
 static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args)
 {
-    // int ret = 0;
-    // double *lats, *lons; /* arrays for latitudes and longitudes */
-//    grib_iterator_unstructured* self = (grib_iterator_unstructured*)iter;
-    return GRIB_NOT_IMPLEMENTED;
+    int ret = 0;
+    grib_iterator_unstructured* self = (grib_iterator_unstructured*)iter;
+    long numberOfGridUsed, numberOfGridInReference;
+    char unstructuredGridType[32] = {0,};
+    char unstructuredGridSubtype[32] = {0,};
+    size_t slen = 0;
 
-    // const char* s_radius                 = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_nx                     = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_ny                     = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_latFirstInDegrees      = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_lonFirstInDegrees      = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_southPoleOnPlane       = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_centralLongitude       = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_centralLatitude        = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_Dx                     = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_Dy                     = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_iScansNegatively       = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_jScansPositively       = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_jPointsAreConsecutive  = grib_arguments_get_name(h, args, self->carg++);
-    // const char* s_alternativeRowScanning = grib_arguments_get_name(h, args, self->carg++);
+    const char* s_unstructuredGridType    = grib_arguments_get_name(h, args, self->carg++);
+    const char* s_unstructuredGridSubtype = grib_arguments_get_name(h, args, self->carg++);
+    const char* s_numberOfGridUsed        = grib_arguments_get_name(h, args, self->carg++);
+    const char* s_numberOfGridInReference = grib_arguments_get_name(h, args, self->carg++);
+    const char* s_uuidOfHGrid             = grib_arguments_get_name(h, args, self->carg++);
 
-    // if (iter->nv != nx * ny) {
-    //     grib_context_log(h->context, GRIB_LOG_ERROR, "%s: Wrong number of points (%zu!=%ldx%ld)", ITER, iter->nv, nx, ny);
-    //     return GRIB_WRONG_GRID;
-    // }
-    // if ((ret = grib_get_double_internal(h, s_latFirstInDegrees, &latFirstInDegrees)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_double_internal(h, s_lonFirstInDegrees, &lonFirstInDegrees)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_long_internal(h, s_southPoleOnPlane, &southPoleOnPlane)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_double_internal(h, s_centralLongitude, &centralLongitudeInDegrees)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_double_internal(h, s_centralLatitude, &centralLatitudeInDegrees)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_double_internal(h, s_Dx, &Dx)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_double_internal(h, s_Dy, &Dy)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_long_internal(h, s_jPointsAreConsecutive, &jPointsAreConsecutive)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_long_internal(h, s_jScansPositively, &jScansPositively)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_long_internal(h, s_iScansNegatively, &iScansNegatively)) != GRIB_SUCCESS)
-    //     return ret;
-    // if ((ret = grib_get_long_internal(h, s_alternativeRowScanning, &alternativeRowScanning)) != GRIB_SUCCESS)
-    //     return ret;
+    slen = sizeof(unstructuredGridType);
+    if ((ret = grib_get_string_internal(h, s_unstructuredGridType, unstructuredGridType, &slen)) != GRIB_SUCCESS)
+        return ret;
 
-    // iter->e = -1;
+    slen = sizeof(unstructuredGridSubtype);
+    if ((ret = grib_get_string_internal(h, s_unstructuredGridSubtype, unstructuredGridSubtype, &slen)) != GRIB_SUCCESS)
+        return ret;
 
-    // /* Apply the scanning mode flags which may require data array to be transformed */
-    // ret = transform_iterator_data(h->context, iter->data,
-    //                               iScansNegatively, jScansPositively, jPointsAreConsecutive, alternativeRowScanning,
-    //                               iter->nv, nx, ny);
+    if ((ret = grib_get_long_internal(h, s_numberOfGridUsed, &numberOfGridUsed)) != GRIB_SUCCESS)
+        return ret;
+    if ((ret = grib_get_long_internal(h, s_numberOfGridInReference, &numberOfGridInReference)) != GRIB_SUCCESS)
+        return ret;
 
-    // return ret;
+    self->lats = (double*)grib_context_malloc(h->context, iter->nv * sizeof(double));
+    if (self->lats == nullptr) {
+        return GRIB_OUT_OF_MEMORY;
+    }
+
+    self->lons = (double*)grib_context_malloc(h->context, iter->nv * sizeof(double));
+    if (self->lons == nullptr) {
+        return GRIB_OUT_OF_MEMORY;
+    }
+
+    // Calculate lats lons
+    // TODO(mapm)
+
+    iter->e = -1;
+    return GRIB_NOT_IMPLEMENTED; // Remove when all is OK
+
+    //return ret;
 }
 
 static int destroy(grib_iterator* i)
