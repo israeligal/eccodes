@@ -30,6 +30,11 @@
 #include "eckit/types/Fraction.h"
 
 
+namespace eckit::geo::util {
+const std::vector<double>& gaussian_latitudes(size_t N, bool increasing);
+}
+
+
 namespace eccodes::geo {
 
 
@@ -53,8 +58,7 @@ namespace {
 using eckit::Log;
 
 
-class Condition {
-public:
+struct Condition {
     Condition() = default;
 
     Condition(const Condition&)            = delete;
@@ -68,7 +72,7 @@ public:
 
 
 template <class T>
-class ConditionT : public Condition {
+struct ConditionT : Condition {
     const char* key_;
     T value_;
     bool eval(codes_handle* /*unused*/) const override;
@@ -127,44 +131,22 @@ bool ConditionT<std::string>::eval(codes_handle* h) const {
 }
 
 
-class ConditionOR : public Condition {
-    const Condition* left_;
-    const Condition* right_;
+struct ConditionOR : Condition {
+    const std::unique_ptr<const Condition> left_;
+    const std::unique_ptr<const Condition> right_;
     bool eval(codes_handle* h) const override { return left_->eval(h) || right_->eval(h); }
-    ~ConditionOR() override {
-        delete right_;
-        delete left_;
-    }
 
-public:
     ConditionOR(const Condition* left, const Condition* right) : left_(left), right_(right) {}
-
-    ConditionOR(const ConditionOR&)            = delete;
-    ConditionOR(ConditionOR&&)                 = delete;
-    ConditionOR& operator=(const ConditionOR&) = delete;
-    ConditionOR& operator=(ConditionOR&&)      = delete;
 };
 
 
-/*
-class ConditionAND : public Condition {
-    const Condition* left_;
-    const Condition* right_;
-    bool eval(codes_handle* h) const override  { return left_->eval(h) && right_->eval(h); }
-    ~ConditionAND() override {
-        delete right_;
-        delete left_;
-    }
+struct ConditionAND : Condition {
+    const std::unique_ptr<const Condition> left_;
+    const std::unique_ptr<const Condition> right_;
+    bool eval(codes_handle* h) const override { return left_->eval(h) && right_->eval(h); }
 
-public:
     ConditionAND(const Condition* left, const Condition* right) : left_(left), right_(right) {}
-
-    ConditionAND(const ConditionAND&) = delete;
-    ConditionAND( ConditionAND&&) = delete;
-    ConditionAND& operator=(const ConditionAND&) = delete;
-    ConditionAND& operator=( ConditionAND&&) = delete;
 };
-*/
 
 
 /*
@@ -198,25 +180,42 @@ Condition* is(const char* key, const T& value) {
     return new ConditionT<T>(key, value);
 }
 
+
 Condition* is(const char* key, const char* value) {
     return new ConditionT<std::string>(key, value);
 }
 
-/*
- Condition *_and(const Condition *left, const Condition *right) {
+
+Condition* _and(const Condition* left, const Condition* right) {
     return new ConditionAND(left, right);
 }
-*/
+
 
 Condition* _or(const Condition* left, const Condition* right) {
     return new ConditionOR(left, right);
 }
+
 
 /*
  Condition *_not(const Condition *c) {
     return new ConditionNOT(c);
 }
 */
+
+
+Condition* is_gaussian() {
+    const auto* key = "gridType";
+    return _or(is(key, "reduced_gg"),
+               _or(is(key, "regular_gg"),
+                   _or(is(key, "reduced_rotated_gg"),
+                       _or(is(key, "regular_rotated_gg"),
+                           _or(is(key, "rotated_gg"),
+                               _or(is(key, "reduced_stretched_gg"),
+                                   _or(is(key, "regular_stretched_gg"),
+                                       _or(is(key, "reduced_stretched_rotated_gg"),
+                                           _or(is(key, "regular_stretched_rotated_gg"),
+                                               _or(is(key, "stretched_gg"), is(key, "stretched_rotated_gg")))))))))));
+}
 
 
 const char* get_key(const std::string& name, codes_handle* h) {
@@ -240,6 +239,17 @@ const char* get_key(const std::string& name, codes_handle* h) {
         {"east", "longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids", is("gridType", "reduced_gg")},
         {"east", "longitudeOfLastGridPointInDegrees"},
 
+        {"north", "latitudeOfFirstGridPointInDegrees_fix_for_gaussian_grids",
+         _and(is("scanningMode", 0L), is_gaussian())},
+        {"south", "latitudeOfLastGridPointInDegrees_fix_for_gaussian_grids",
+         _and(is("scanningMode", 0L), is_gaussian())},
+        {"north", "latitudeOfLastGridPointInDegrees_fix_for_gaussian_grids",
+         _and(is("scanningMode", 1L), is_gaussian())},
+        {"south", "latitudeOfFirstGridPointInDegrees_fix_for_gaussian_grids",
+         _and(is("scanningMode", 1L), is_gaussian())},
+
+        {"north", "latitudeOfLastGridPointInDegrees", is("jScansPositively", 1L)},
+        {"south", "latitudeOfFirstGridPointInDegrees", is("jScansPositively", 1L)},
         {"north", "latitudeOfFirstGridPointInDegrees", is("scanningMode", 0L)},
         {"south", "latitudeOfLastGridPointInDegrees", is("scanningMode", 0L)},
 
@@ -388,13 +398,11 @@ ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_gr
                 if (static_cast<size_t>(plSum) == valuesSize) {
 
                     double eps = 0.;
-                    std::unique_ptr<ProcessingT<double>> precision_in_degrees(angular_precision());
-                    ASSERT(precision_in_degrees->eval(h, eps));
+                    ASSERT(std::unique_ptr<ProcessingT<double>>(angular_precision())->eval(h, eps));
 
                     eckit::Fraction Lon2_expected(360L * (plMax - 1L), plMax);
 
-                    if (!eckit::types::is_approximately_equal<double>(Lon2, Lon2_expected, eps)) {
-
+                    if (!eckit::types::is_approximately_greater_or_equal<double>(Lon2, Lon2_expected, eps)) {
                         std::ostringstream msgs;
                         msgs.precision(32);
                         msgs << "GribParametrisation: wrongly encoded longitudeOfLastGridPointInDegrees:"
@@ -406,9 +414,9 @@ ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_gr
                              << static_cast<double>(Lon2_expected) << " (" << Lon2_expected << " +- " << eps << ")";
 
                         wrongly_encoded_grib(msgs.str());
-
-                        Lon2 = Lon2_expected;
                     }
+
+                    Lon2 = 360.;
                 }
             }
         }
@@ -416,6 +424,56 @@ ProcessingT<double>* longitudeOfLastGridPointInDegrees_fix_for_global_reduced_gr
         return true;
     });
 };
+
+
+ProcessingT<double>* latitudeOfFirstGridPointInDegrees_fix_for_gaussian_grids() {
+    return new ProcessingT<double>([](codes_handle* h, double& lat) {
+        double eps = 0.;
+        ASSERT(std::unique_ptr<ProcessingT<double>>(angular_precision())->eval(h, eps));
+
+        long N = 0L;
+        CHECK_CALL(codes_get_long(h, "N", &N));
+        ASSERT(N > 0);
+
+        double& Lat1 = lat;
+        CHECK_CALL(codes_get_double(h, "latitudeOfFirstGridPointInDegrees", &Lat1));
+
+        double Lat2 = 0.;
+        CHECK_CALL(codes_get_double(h, "latitudeOfLastGridPointInDegrees", &Lat2));
+
+        const auto snap = eckit::geo::util::gaussian_latitudes(N, Lat1 < Lat2).front();
+        if (eckit::types::is_approximately_equal(Lat1, snap, eps)) {
+            lat = snap < 0. ? eckit::geo::SOUTH_POLE.lat : eckit::geo::NORTH_POLE.lat;
+        }
+
+        return true;
+    });
+}
+
+
+ProcessingT<double>* latitudeOfLastGridPointInDegrees_fix_for_gaussian_grids() {
+    return new ProcessingT<double>([](codes_handle* h, double& lat) {
+        double eps = 0.;
+        ASSERT(std::unique_ptr<ProcessingT<double>>(angular_precision())->eval(h, eps));
+
+        long N = 0L;
+        CHECK_CALL(codes_get_long(h, "N", &N));
+        ASSERT(N > 0);
+
+        double Lat1 = 0.;
+        CHECK_CALL(codes_get_double(h, "latitudeOfFirstGridPointInDegrees", &Lat1));
+
+        double& Lat2 = lat;
+        CHECK_CALL(codes_get_double(h, "latitudeOfLastGridPointInDegrees", &Lat2));
+
+        const auto snap = eckit::geo::util::gaussian_latitudes(N, Lat1 < Lat2).back();
+        if (eckit::types::is_approximately_equal(Lat2, snap, eps)) {
+            lat = snap < 0. ? eckit::geo::SOUTH_POLE.lat : eckit::geo::NORTH_POLE.lat;
+        }
+
+        return true;
+    });
+}
 
 
 ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids() {
@@ -440,8 +498,7 @@ ProcessingT<double>* iDirectionIncrementInDegrees_fix_for_periodic_regular_grids
 
         // angles are within +-1/2 precision, so (Lon2 - Lon1 + we) uses factor 3*1/2
         double eps = 0.;
-        std::unique_ptr<ProcessingT<double>> precision_in_degrees(angular_precision());
-        ASSERT(precision_in_degrees->eval(h, eps));
+        ASSERT(std::unique_ptr<ProcessingT<double>>(angular_precision())->eval(h, eps));
         eps *= 1.5;
 
         constexpr double GLOBE = 360;
@@ -736,6 +793,10 @@ bool GribSpec::get(const std::string& name, double& value) const {
              longitudeOfLastGridPointInDegrees_fix_for_global_reduced_grids()},
             {"iDirectionIncrementInDegrees_fix_for_periodic_regular_grids",
              iDirectionIncrementInDegrees_fix_for_periodic_regular_grids()},
+            {"latitudeOfFirstGridPointInDegrees_fix_for_gaussian_grids",
+             latitudeOfFirstGridPointInDegrees_fix_for_gaussian_grids()},
+            {"latitudeOfLastGridPointInDegrees_fix_for_gaussian_grids",
+             latitudeOfLastGridPointInDegrees_fix_for_gaussian_grids()},
         };
 
         if (get_value(key, handle_, value, process)) {
