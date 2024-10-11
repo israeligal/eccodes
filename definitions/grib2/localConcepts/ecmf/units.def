@@ -14015,6 +14015,13 @@
 	 parameterNumber = 212 ;
 	 typeOfFirstFixedSurface = 254 ;
 	}
+#Stochastic Parameter Perturbation (SPP)
+'dimensionless' = {
+         localTablesVersion = 1 ;
+         discipline = 254 ;
+         parameterCategory = 254 ;
+         parameterNumber = 215 ;
+        }
 #Surface roughness length for heat
 'm' = {
 	 localTablesVersion = 1 ;

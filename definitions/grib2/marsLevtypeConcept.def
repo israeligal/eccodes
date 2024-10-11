@@ -78,3 +78,5 @@
 'sol' = {typeOfFirstFixedSurface=187; typeOfSecondFixedSurface=255;}
 'sol' = {typeOfFirstFixedSurface=187; typeOfSecondFixedSurface=187;}
 'sfc' = {typeOfFirstFixedSurface=187; typeOfSecondFixedSurface=185;}
+# Do we want this also for the covariances ? Probably !
+'al' = {typeOfFirstFixedSurface=254;}

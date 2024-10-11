@@ -61,7 +61,7 @@ codetable[2] productDefinitionTemplateNumber('4.0.table',masterDir,localDir) : d
 if (section2Used == 1) {
    when (new()) {
       set_nofail productDefinitionTemplateNumber=productDefinitionTemplateNumberInternal;
-   }
+  }
 }
 transient genVertHeightCoords = 0;
 

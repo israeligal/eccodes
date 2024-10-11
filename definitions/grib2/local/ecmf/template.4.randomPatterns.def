@@ -1,0 +1,8 @@
+# Random patterns - SKEB / SPPT / SPP
+
+unsigned[2] randomPatternNumber : dump;
+unsigned[2] totalNumberOfRandomPattern : dump;
+unsigned[4] scaledValueOfSpatialScale : dump;
+unsigned[1] scaleFactorOfSpatialScale : dump;
+unsigned[4] scaledValueOfTemporalScale : dump;
+unsigned[1] scaleFactorOfTemporalScale : dump;

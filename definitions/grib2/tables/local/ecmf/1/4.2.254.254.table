@@ -20,3 +20,6 @@
 210 210 Covariance between 2-metre relative humidity and temperature of snow layer 2 [% K]
 211 211 Covariance between 2-metre temperature and temperature of snow layer 3 [K K]
 212 212 Covariance between 2-metre relative humidity and temperature of snow layer 3 [% K]
+213 213 Stochastic kinetic energy backscatter (SKEB)
+214 214 Stochastically Perturbed Parametrization Tendencies (SPPT)
+215 215 Stochastic Parameter Perturbation (SPP)
