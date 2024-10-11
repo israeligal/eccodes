@@ -113,7 +113,7 @@ ecbuild_add_option( FEATURE GEOGRAPHY
     REQUIRED_PACKAGES eckit
     DEFAULT ON )
 
-if(HAVE_GEOGRAPHY)
+if(HAVE_GEOGRAPHY AND NOT TARGET eckit_geo)
     find_library(ECKIT_GEO_LIB NAMES eckit_geo REQUIRED)
 endif()
 
