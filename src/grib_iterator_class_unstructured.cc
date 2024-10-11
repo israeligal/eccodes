@@ -103,14 +103,23 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
         return GRIB_GEOCALCULUS_PROBLEM;
     }
 
-    // assign coordinates
-    auto [lats, lons] = std::unique_ptr<const eckit::geo::Grid>(eckit::geo::GridFactory::build(*spec))->to_latlons();
-    if (lats.size() != lons.size() || lats.size() != iter->nv) {
-        return GRIB_WRONG_GRID;
-    }
+    try {
+        // assign coordinates
+        auto [lats, lons] =
+            std::unique_ptr<const eckit::geo::Grid>(eckit::geo::GridFactory::build(*spec))->to_latlons();
+        if (lats.size() != lons.size() || lats.size() != iter->nv) {
+            return GRIB_WRONG_GRID;
+        }
 
-    lats.swap(self->lats);
-    lons.swap(self->lons);
+        lats.swap(self->lats);
+        lons.swap(self->lons);
+    }
+    catch (std::exception& e) {
+        grib_context_log(h->context, GRIB_LOG_ERROR, "Unstructured Geoiterator: %s", e.what());
+    }
+    catch (...) {
+        return GRIB_INTERNAL_ERROR;
+    }
 
     iter->e = -1;
     return err;

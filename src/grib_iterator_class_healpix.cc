@@ -86,7 +86,7 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
     auto* self = (grib_iterator_healpix*)iter;
     int err    = GRIB_SUCCESS;
 
-    const auto* ITER = "HEALPix Geoiterator";
+#define ITER "HEALPix Geoiterator"
 
     const auto* s_Nside = grib_arguments_get_name(h, args, self->carg++);
     const auto* s_Order = grib_arguments_get_name(h, args, self->carg++);
@@ -126,6 +126,9 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
 
         self->iter.reset(self->healpix->cbegin().release());
         self->end.reset(self->healpix->cend().release());
+    }
+    catch (std::exception& e) {
+        grib_context_log(h->context, GRIB_LOG_ERROR, ITER ": %s", e.what());
     }
     catch (...) {
         return GRIB_INTERNAL_ERROR;
