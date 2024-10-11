@@ -95,15 +95,15 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
         return err;
     }
 
-    // check if a uid can be mapped to a type (hence recognized)
-    eckit::geo::spec::Custom custom{{"uid", uuidOfHGrid}};
-    std::unique_ptr<eckit::geo::Spec> spec(eckit::geo::GridFactory::make_spec(custom));
-
-    if (!spec->has("type")) {
-        return GRIB_GEOCALCULUS_PROBLEM;
-    }
-
     try {
+        // check if a uid can be mapped to a type (hence recognized)
+        eckit::geo::spec::Custom custom{{"uid", uuidOfHGrid}};
+        std::unique_ptr<eckit::geo::Spec> spec(eckit::geo::GridFactory::make_spec(custom));
+
+        if (!spec->has("type")) {
+            return GRIB_GEOCALCULUS_PROBLEM;
+        }
+
         // assign coordinates
         auto [lats, lons] =
             std::unique_ptr<const eckit::geo::Grid>(eckit::geo::GridFactory::build(*spec))->to_latlons();

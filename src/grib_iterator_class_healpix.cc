@@ -47,8 +47,8 @@ struct grib_iterator_healpix {
     // Members defined in gen
     int carg;
     const char* missingValue;
-    // Members defined in healpix
-    std::unique_ptr<eckit::geo::Grid> healpix;
+    // Members defined in grid
+    std::unique_ptr<eckit::geo::Grid> grid;
     eckit::geo::Grid::Iterator iter;
     eckit::geo::Grid::Iterator end;
 };
@@ -86,7 +86,7 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
     auto* self = (grib_iterator_healpix*)iter;
     int err    = GRIB_SUCCESS;
 
-#define ITER "HEALPix Geoiterator"
+    const char* ITER = "HEALPix Geoiterator";
 
     const auto* s_Nside = grib_arguments_get_name(h, args, self->carg++);
     const auto* s_Order = grib_arguments_get_name(h, args, self->carg++);
@@ -114,7 +114,7 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
     }
 
     if (iter->nv != 12 * Nside * Nside) {
-        grib_context_log(h->context, GRIB_LOG_ERROR, "%s: Wrong number of points (%zu!=12x%ldx%ld)", ITER, iter->nv,
+        grib_context_log(h->context, GRIB_LOG_ERROR, "%s: Wrong number of points (%zu != 12x%ldx%ld)", ITER, iter->nv,
                          Nside, Nside);
         return GRIB_WRONG_GRID;
     }
@@ -122,13 +122,13 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
     try {
         auto ordering =
             STR_EQUAL(order, "nested") != 0 ? eckit::geo::Ordering::healpix_nested : eckit::geo::Ordering::healpix_ring;
-        self->healpix = std::make_unique<eckit::geo::grid::HEALPix>(Nside, ordering);
+        self->grid = std::make_unique<eckit::geo::grid::HEALPix>(Nside, ordering);
 
-        self->iter.reset(self->healpix->cbegin().release());
-        self->end.reset(self->healpix->cend().release());
+        self->iter.reset(self->grid->cbegin().release());
+        self->end.reset(self->grid->cend().release());
     }
     catch (std::exception& e) {
-        grib_context_log(h->context, GRIB_LOG_ERROR, ITER ": %s", e.what());
+        grib_context_log(h->context, GRIB_LOG_ERROR, "%s: %s", ITER, e.what());
     }
     catch (...) {
         return GRIB_INTERNAL_ERROR;
