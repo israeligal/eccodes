@@ -129,7 +129,7 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
     std::unique_ptr<eckit::geo::Spec> spec(eckit::geo::GridFactory::make_spec(custom));
 
     if (!spec->has("type")) {
-        return GRIB_NOT_IMPLEMENTED;
+        return GRIB_GEOCALCULUS_PROBLEM;
     }
 
     // assign coordinates
