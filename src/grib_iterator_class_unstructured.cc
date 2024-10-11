@@ -17,6 +17,7 @@
 
 #include "grib_api_internal.h"
 
+
 /*
    This is used by make_class.pl
 
@@ -42,43 +43,16 @@ or edit "iterator.class" and rerun ./make_class.pl
 */
 
 
-static void init_class(grib_iterator_class*);
-static int init(grib_iterator* i, grib_handle*, grib_arguments*);
-static int next(grib_iterator* i, double* lat, double* lon, double* val);
-static int destroy(grib_iterator* i);
-
-
 struct grib_iterator_unstructured {
     grib_iterator it;
-    /* Members defined in gen */
+    // Members defined in gen
     int carg;
     const char* missingValue;
-    /* Members defined in unstructured */
+    // Members defined in unstructured
     std::vector<double> lats;
     std::vector<double> lons;
     long Nj;
 };
-
-
-extern grib_iterator_class* grib_iterator_class_gen;
-
-
-static grib_iterator_class _grib_iterator_class_unstructured = {
-    &grib_iterator_class_gen,            // super
-    "unstructured",                      // name
-    sizeof(grib_iterator_unstructured),  // size of instance
-    0,                                   // inited
-    &init_class,                         // init_class
-    &init,                               // constructor
-    &destroy,                            // destructor
-    &next,                               // next value
-    nullptr,                             // previous value
-    nullptr,                             // reset the counter
-    nullptr,                             // has next values
-};
-
-
-grib_iterator_class* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
 
 
 static void init_class(grib_iterator_class* c) {
@@ -86,9 +60,6 @@ static void init_class(grib_iterator_class* c) {
     c->reset    = (*(c->super))->reset;
     c->has_next = (*(c->super))->has_next;
 }
-
-
-#define ITER "Unstructured grid Geoiterator"
 
 
 static int next(grib_iterator* iter, double* lat, double* lon, double* val) {
@@ -146,6 +117,22 @@ static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
 }
 
 
-static int destroy(grib_iterator* i) {
-    return GRIB_SUCCESS;
-}
+extern grib_iterator_class* grib_iterator_class_gen;
+
+
+static grib_iterator_class _grib_iterator_class_unstructured = {
+    &grib_iterator_class_gen,            // super
+    "unstructured",                      // name
+    sizeof(grib_iterator_unstructured),  // size of instance
+    0,                                   // inited
+    &init_class,                         // init_class
+    &init,                               // constructor
+    nullptr,                             // destructor
+    &next,                               // next value
+    nullptr,                             // previous value
+    nullptr,                             // reset the counter
+    nullptr,                             // has next values
+};
+
+
+grib_iterator_class* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
