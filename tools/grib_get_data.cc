@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
             }
 
 
-            if constexpr (true) {
+            if constexpr (false) {
                 // eckit::geo lat/lon/values iterator
 
                 eccodes::geo::GribSpec config(h);

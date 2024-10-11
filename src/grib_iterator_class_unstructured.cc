@@ -8,7 +8,13 @@
  * virtue of its status as an intergovernmental organisation nor does it submit to any jurisdiction.
  */
 
-#include <cmath>
+
+#include <memory>
+#include <vector>
+
+#include "eckit/geo/Grid.h"
+#include "eckit/geo/spec/Custom.h"
+
 #include "grib_api_internal.h"
 
 /*
@@ -48,12 +54,14 @@ struct grib_iterator_unstructured {
     int carg;
     const char* missingValue;
     /* Members defined in unstructured */
-    double* lats;
-    double* lons;
+    std::vector<double> lats;
+    std::vector<double> lons;
     long Nj;
 };
 
+
 extern grib_iterator_class* grib_iterator_class_gen;
+
 
 static grib_iterator_class _grib_iterator_class_unstructured = {
     &grib_iterator_class_gen,            // super
@@ -63,11 +71,12 @@ static grib_iterator_class _grib_iterator_class_unstructured = {
     &init_class,                         // init_class
     &init,                               // constructor
     &destroy,                            // destructor
-    &next,                               // Next Value
-    nullptr,                             //  Previous Value
-    nullptr,                             // Reset the counter
+    &next,                               // next value
+    nullptr,                             // previous value
+    nullptr,                             // reset the counter
     nullptr,                             // has next values
 };
+
 
 grib_iterator_class* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
 
@@ -85,7 +94,7 @@ static void init_class(grib_iterator_class* c) {
 static int next(grib_iterator* iter, double* lat, double* lon, double* val) {
     auto* self = (grib_iterator_unstructured*)iter;
 
-    if (iter->e >= iter->nv - 1) {
+    if (iter->e >= static_cast<long>(iter->nv) - 1) {
         return 0;
     }
 
@@ -93,7 +102,7 @@ static int next(grib_iterator* iter, double* lat, double* lon, double* val) {
 
     *lat = self->lats[iter->e];
     *lon = self->lons[iter->e];
-    if (val && iter->data) {
+    if (val != nullptr && iter->data != nullptr) {
         *val = iter->data[iter->e];
     }
     return 1;
@@ -101,76 +110,42 @@ static int next(grib_iterator* iter, double* lat, double* lon, double* val) {
 
 
 static int init(grib_iterator* iter, grib_handle* h, grib_arguments* args) {
-    int ret    = 0;
     auto* self = (grib_iterator_unstructured*)iter;
+    int err    = GRIB_SUCCESS;
 
-    long numberOfGridUsed         = 0;
-    long numberOfGridInReference  = 0;
-    char unstructuredGridType[32] = {
+    // access unique identifier
+    const auto* s_uuidOfHGrid = grib_arguments_get_name(h, args, self->carg++);
+    char uuidOfHGrid[32]      = {
         0,
     };
-    char unstructuredGridSubtype[32] = {
-        0,
-    };
-    char uuidOfHGrid[32] = {
-        0,
-    };
-    size_t slen = 0;
 
-    const auto* s_unstructuredGridType    = grib_arguments_get_name(h, args, self->carg++);
-    const auto* s_unstructuredGridSubtype = grib_arguments_get_name(h, args, self->carg++);
-    const auto* s_numberOfGridUsed        = grib_arguments_get_name(h, args, self->carg++);
-    const auto* s_numberOfGridInReference = grib_arguments_get_name(h, args, self->carg++);
-    const auto* s_uuidOfHGrid             = grib_arguments_get_name(h, args, self->carg++);
-
-    slen = sizeof(unstructuredGridType);
-    if ((ret = grib_get_string_internal(h, s_unstructuredGridType, unstructuredGridType, &slen)) != GRIB_SUCCESS) {
-        return ret;
+    auto slen = sizeof(uuidOfHGrid);
+    if ((err = grib_get_string_internal(h, s_uuidOfHGrid, uuidOfHGrid, &slen)) != GRIB_SUCCESS) {
+        return err;
     }
 
-    slen = sizeof(unstructuredGridSubtype);
-    if ((ret = grib_get_string_internal(h, s_unstructuredGridSubtype, unstructuredGridSubtype, &slen)) !=
-        GRIB_SUCCESS) {
-        return ret;
+    // check if a uid can be mapped to a type (hence recognized)
+    eckit::geo::spec::Custom custom{{"uid", uuidOfHGrid}};
+    std::unique_ptr<eckit::geo::Spec> spec(eckit::geo::GridFactory::make_spec(custom));
+
+    if (!spec->has("type")) {
+        return GRIB_NOT_IMPLEMENTED;
     }
 
-    if ((ret = grib_get_long_internal(h, s_numberOfGridUsed, &numberOfGridUsed)) != GRIB_SUCCESS) {
-        return ret;
+    // assign coordinates
+    auto [lats, lons] = std::unique_ptr<const eckit::geo::Grid>(eckit::geo::GridFactory::build(*spec))->to_latlons();
+    if (lats.size() != lons.size() || lats.size() != iter->nv) {
+        return GRIB_WRONG_GRID;
     }
 
-    if ((ret = grib_get_long_internal(h, s_numberOfGridInReference, &numberOfGridInReference)) != GRIB_SUCCESS) {
-        return ret;
-    }
-
-    slen = sizeof(uuidOfHGrid);
-    if ((ret = grib_get_string_internal(h, s_uuidOfHGrid, uuidOfHGrid, &slen)) != GRIB_SUCCESS) {
-        return ret;
-    }
-
-    self->lats = static_cast<double*>(grib_context_malloc(h->context, iter->nv * sizeof(double)));
-    if (self->lats == nullptr) {
-        return GRIB_OUT_OF_MEMORY;
-    }
-
-    self->lons = static_cast<double*>(grib_context_malloc(h->context, iter->nv * sizeof(double)));
-    if (self->lons == nullptr) {
-        return GRIB_OUT_OF_MEMORY;
-    }
-
-    // Calculate lats lons
-    // TODO(mapm)
+    lats.swap(self->lats);
+    lons.swap(self->lons);
 
     iter->e = -1;
-    return GRIB_NOT_IMPLEMENTED;  // Remove when all is OK
-
-    // return ret;
+    return err;
 }
 
-static int destroy(grib_iterator* i) {
-    auto* self            = (grib_iterator_unstructured*)i;
-    const grib_context* c = i->h->context;
 
-    grib_context_free(c, self->lats);
-    grib_context_free(c, self->lons);
+static int destroy(grib_iterator* i) {
     return GRIB_SUCCESS;
 }

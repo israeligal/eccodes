@@ -16,5 +16,4 @@ byte[16] uuidOfHGrid : dump;
 template_nofail unstructuredGrid "grib2/localConcepts/[centre:s]/unstructuredGrid.def";
 
 iterator unstructured(numberOfPoints, missingValue, values,
-            unstructuredGridType, unstructuredGridSubtype,
-            numberOfGridUsed, numberOfGridInReference, uuidOfHGrid);
+            uuidOfHGrid);
