@@ -55,10 +55,7 @@ alias longitudeLastInDegrees  = longitudeOfLastGridPointInDegrees;
 alias DiInDegrees             = iDirectionIncrementInDegrees;
 
 if (missing(Ni) && PLPresent == 1) {
-  iterator gaussian_reduced(numberOfPoints,missingValue,values,
-        latitudeOfFirstGridPointInDegrees,longitudeOfFirstGridPointInDegrees,
-        latitudeOfLastGridPointInDegrees,longitudeOfLastGridPointInDegrees,
-        N,pl,Nj);
+  iterator gaussian_reduced(numberOfPoints,missingValue,values);
   nearest reduced(values,radius,Nj,pl);
 
   #meta sumPlArray sum(pl);

@@ -63,10 +63,7 @@ meta numberOfValues number_of_values(values,bitsPerValue,numberOfDataPoints,bitm
 #alias ls.valuesCount=numberOfValues;
 
 if(missing(Ni)){
-   iterator gaussian_reduced(numberOfPoints,missingValue,values,
-       latitudeOfFirstGridPointInDegrees,longitudeOfFirstGridPointInDegrees,
-       latitudeOfLastGridPointInDegrees,longitudeOfLastGridPointInDegrees,
-       N,pl,Nj);
+   iterator gaussian_reduced(numberOfPoints,missingValue,values);
    nearest reduced(values,radius,Nj,pl);
 
    #meta sumPlArray sum(pl);

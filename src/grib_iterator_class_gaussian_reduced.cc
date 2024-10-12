@@ -55,7 +55,7 @@ struct grib_iterator_gaussian_reduced {
     int carg;
     const char* missingValue;
     // Members defined in gaussian_reduced
-    std::unique_ptr<eckit::geo::Grid> grid;
+    std::unique_ptr<const eckit::geo::Grid> grid;
     eckit::geo::Grid::Iterator iter;
     eckit::geo::Grid::Iterator end;
 };
@@ -138,4 +138,4 @@ static grib_iterator_class _grib_iterator_class_gaussian_reduced = {
 };
 
 
-grib_iterator_class* grib_iterator_class_gaussian_reduced = &_grib_iterator_class_gaussian_reduced;
+auto* grib_iterator_class_gaussian_reduced = &_grib_iterator_class_gaussian_reduced;
