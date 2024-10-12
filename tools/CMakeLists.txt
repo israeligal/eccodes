@@ -61,7 +61,7 @@ endforeach()
 
 # Install tools related to the Geoiterator and nearest neighbour search
 if( HAVE_GEOGRAPHY )
-    foreach( tool grib_get_data grib_get_data_diff grib_get_gridspec )
+    foreach( tool grib_get_data grib_get_gridspec )
         ecbuild_add_executable( TARGET  ${tool}
                                 SOURCES ${tool}.cc
                                 LIBS    ecc_tools eckit_option eckit_geo )
