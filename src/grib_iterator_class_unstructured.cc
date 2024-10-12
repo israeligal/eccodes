@@ -144,4 +144,4 @@ static grib_iterator_class _grib_iterator_class_unstructured = {
 };
 
 
-grib_iterator_class* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
+auto* grib_iterator_class_unstructured = &_grib_iterator_class_unstructured;
