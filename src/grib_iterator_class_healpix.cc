@@ -48,7 +48,7 @@ struct grib_iterator_healpix {
     int carg;
     const char* missingValue;
     // Members defined in grid
-    std::unique_ptr<eckit::geo::Grid> grid;
+    std::unique_ptr<const eckit::geo::Grid> grid;
     eckit::geo::Grid::Iterator iter;
     eckit::geo::Grid::Iterator end;
 };
@@ -157,4 +157,4 @@ static grib_iterator_class _grib_iterator_class_healpix = {
 };
 
 
-grib_iterator_class* grib_iterator_class_healpix = &_grib_iterator_class_healpix;
+auto* grib_iterator_class_healpix = &_grib_iterator_class_healpix;
