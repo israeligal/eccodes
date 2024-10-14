@@ -128,6 +128,8 @@ if (paramId >= 140000 && paramId < 141000 &&
 }
 
 template timeproc "grib2/timeproc.def";
-alias mars.timeproc = timeproc ;
+if (defined(timeproc) && !(timeproc is "none")){
+ alias mars.timeproc = timeproc ;
+}
 
 meta md5Section4 md5(offsetSection4,section4Length);

@@ -1,32 +1,36 @@
 concept timeproc {
  # either instantaneous data or processing is specified by mars stream
- "point-in-time"    = {stepType="instant";}
- "point-in-time"    = {stream="swmm"; numberOfTimeRange=1;}
- "point-in-time"    = {stream="mnth"; numberOfTimeRange=1;}
- "point-in-time"    = {stream="mmsa"; numberOfTimeRange=1;}
- "point-in-time"    = {stream="msmm"; numberOfTimeRange=1;}
- "point-in-time"    = {productDefinitionTemplateNumber=8; lengthOfTimeRange=0;}
- "point-in-time"    = {productDefinitionTemplateNumber=11; lengthOfTimeRange=0;}
- "point-in-time"    = {typeOfStatisticalProcessing=10; lengthOfTimeRange=0;}
+# "point-in-time"    = {stepType="instant";}
+ "none"    = {stepType="instant";}
+ "none"    = {stream="swmm"; numberOfTimeRange=1;}
+ "none"    = {stream="mnth"; numberOfTimeRange=1;}
+ "none"    = {stream="mmsa"; numberOfTimeRange=1;}
+ "none"    = {stream="msmm"; numberOfTimeRange=1;}
+# "point-in-time"    = {productDefinitionTemplateNumber=8; lengthOfTimeRange=0;}
+# "point-in-time"    = {productDefinitionTemplateNumber=11; lengthOfTimeRange=0;}
+# "point-in-time"    = {typeOfStatisticalProcessing=10; lengthOfTimeRange=0;}
+ "none"    = {productDefinitionTemplateNumber=8; lengthOfTimeRange=0;}
+ "none"    = {productDefinitionTemplateNumber=11; lengthOfTimeRange=0;}
+ "none"    = {typeOfStatisticalProcessing=10; lengthOfTimeRange=0;}
  # special rules for weekly extended-range (sub-seasonal) products
- "point-in-time"    = {marsStream="eefo"; type="fcmax"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eefo"; type="fcmin"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eefo"; type="fcmean"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eefo"; type="fcstdev"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eefo"; type="taem"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eefo"; type="taes"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="fcmax"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="fcmin"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="fcmean"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="fcstdev"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="taem"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="eehs"; type="taes"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="fcmax"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="fcmin"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="fcmean"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="fcstdev"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="taem"; numberOfTimeRange=1;}
- "point-in-time"    = {marsStream="efhs"; type="taes"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="fcmax"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="fcmin"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="fcmean"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="fcstdev"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="taem"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eefo"; type="taes"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="fcmax"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="fcmin"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="fcmean"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="fcstdev"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="taem"; numberOfTimeRange=1;}
+ "none"    = {marsStream="eehs"; type="taes"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="fcmax"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="fcmin"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="fcmean"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="fcstdev"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="taem"; numberOfTimeRange=1;}
+ "none"    = {marsStream="efhs"; type="taes"; numberOfTimeRange=1;}
  #
  ### Accumulations ###
  # we need to do this dataset dependent, in some datasets we might have
@@ -34,6 +38,8 @@ concept timeproc {
  ## since start accumulation must have forecastTime=0
  # hourly
  "since-start"    = {typeOfStatisticalProcessing=1; forecastTime=0; indicatorOfUnitForTimeRange=1;}
+  # type an accumulation can have lengthOfTimeRange=0, they should be none
+ "none"    = {typeOfStatisticalProcessing=1; forecastTime=0; marsType="an"; lengthOfTimeRange=0;}
  # 24 hourly time unit
  "since-start"    = {typeOfStatisticalProcessing=1; forecastTime=0; indicatorOfUnitForTimeRange=2;}
  # 24 hourly time unit
