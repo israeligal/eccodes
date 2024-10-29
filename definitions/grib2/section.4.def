@@ -127,9 +127,7 @@ if (paramId >= 140000 && paramId < 141000 &&
   alias mars.paramtype = paramTypeWave;
 }
 
-template timeproc "grib2/timeproc.def";
-if (defined(timeproc) && !(timeproc is "none")){
- alias mars.timeproc = timeproc ;
-}
+concept timeproc (unknown,"timeprocConcept.def",conceptsDir2,conceptsDir1) : read_only ;
+alias mars.timeproc = timeproc ;
 
 meta md5Section4 md5(offsetSection4,section4Length);
