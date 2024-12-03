@@ -1,6 +1,6 @@
 # (C) Copyright 2005- ECMWF.
 
-# TEMPLATE 4.121, Verification scores for analyis or forecast at a horizontal level or in a horizontal layer at a point in time
+# TEMPLATE 4.137, Verification scores for analyis or forecast at a horizontal level or in a horizontal layer at a point in time
 
 include "grib2/template.4.parameterv.def"
 include "grib2/template.4.generating_process.def"

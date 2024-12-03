@@ -1,6 +1,6 @@
 # (C) Copyright 2005- ECMWF.
 
-# TEMPLATE 4.126, Verification scores for derived forecasts based on all ensemble members at a horizontal level or in a horizontal layer in a continuous or non-continuous time interval
+# TEMPLATE 4.142, Verification scores for derived forecasts based on all ensemble members at a horizontal level or in a horizontal layer in a continuous or non-continuous time interval
 
 include "grib2/template.4.parameterv.def"
 include "grib2/template.4.generating_process.def"
